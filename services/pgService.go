@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/amine-amaach/simulators/pgmqtt/services/models"
+	"github.com/amine-amaach/simulators/services/models"
 )
 
 // PgmqttService describes a service that generates power-generator data to

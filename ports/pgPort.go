@@ -3,7 +3,7 @@ package ports
 import (
 	"encoding/json"
 
-	"github.com/amine-amaach/simulators/pgmqtt/models"
+	"github.com/amine-amaach/simulators/services/models"
 )
 
 // PgPort describes a service that generates power-generator data to

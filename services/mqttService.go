@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/amine-amaach/simulators/pgmqtt/services/models"
-	"github.com/amine-amaach/simulators/pgmqtt/utils"
+	"github.com/amine-amaach/simulators/services/models"
+	"github.com/amine-amaach/simulators/utils"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"

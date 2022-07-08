@@ -3,8 +3,8 @@ package ports
 import (
 	"context"
 
-	"github.com/amine-amaach/simulators/pgmqtt/models"
-	"github.com/amine-amaach/simulators/pgmqtt/utils"
+	"github.com/amine-amaach/simulators/services/models"
+	"github.com/amine-amaach/simulators/utils"
 	"github.com/eclipse/paho.golang/autopaho"
 	"go.uber.org/zap"
 )
