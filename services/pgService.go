@@ -16,5 +16,5 @@ type PgmqttService interface {
 
 	// MakeMessagePayload generates random data for a given power-generator and
 	// returns a map contains its topics with corresponding message payloads.
-	MakeMessagePayloads(ctx context.Context, pg models.Generator) (map[string]json.RawMessage, error)
+	BuildMessagePayloads(ctx context.Context, pg models.Generator) (map[string]json.RawMessage, error)
 }
