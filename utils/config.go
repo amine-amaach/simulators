@@ -76,7 +76,7 @@ func (config *Config) setDefaults(logger *zap.SugaredLogger) {
 	viper.SetDefault("DELAY_BETWEEN_MESSAGES_MIN", 5)
 	viper.SetDefault("DELAY_BETWEEN_MESSAGES_MAX", 10)
 	viper.SetDefault("GENERATORS_NUMBER", 3)
-	viper.SetDefault("GENERATORS_LIMIT", 10)
+	viper.SetDefault("GENERATORS_LIMIT", 50)
 
 	err := viper.Unmarshal(&config)
 	if err != nil {
