@@ -2,18 +2,22 @@ package services
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/amine-amaach/simulators/services/models"
 )
 
-type simService struct{}
+type SimService struct{}
 
-func NewSimService() *simService {
-	return &simService{}
+func NewSimService() *SimService {
+	return &SimService{}
 }
 
 // setTemperature implements the simPort by setting the pg temperature.
-func (svc *simService) SetTemperature(pg *models.Generator) {
+func (svc *SimService) SetTemperature(pg *models.Generator) {
+
+	pg.Temperature.ItemOldValue = pg.Temperature.ItemValue
+	pg.Temperature.PreviousTimestamp, pg.Temperature.ChangedTimestamp = pg.Temperature.ChangedTimestamp, time.Now().Format(time.RFC3339)
 
 	// Assert load data type to int.
 	load, ok := pg.Load.ItemValue.(int)
@@ -37,7 +41,10 @@ func (svc *simService) SetTemperature(pg *models.Generator) {
 }
 
 // SetFuelLevel implements the simPort by setting the pg Fuel level.
-func (svc *simService) SetFuelLevel(pg *models.Generator) {
+func (svc *SimService) SetFuelLevel(pg *models.Generator) {
+
+	pg.CurrentFuel.ItemOldValue = pg.CurrentFuel.ItemValue
+	pg.CurrentFuel.PreviousTimestamp, pg.CurrentFuel.ChangedTimestamp = pg.CurrentFuel.ChangedTimestamp, time.Now().Format(time.RFC3339)
 
 	// Assert load data type to int.
 	load, ok := pg.Load.ItemValue.(int)
@@ -69,7 +76,10 @@ func (svc *simService) SetFuelLevel(pg *models.Generator) {
 }
 
 // SetPower implements the simPort by setting the pg power.
-func (svc *simService) SetPower(pg *models.Generator) {
+func (svc *SimService) SetPower(pg *models.Generator) {
+
+	pg.Power.ItemOldValue = pg.Power.ItemValue
+	pg.Power.PreviousTimestamp, pg.Power.ChangedTimestamp = pg.Power.ChangedTimestamp, time.Now().Format(time.RFC3339)
 
 	// Assert load data type to int.
 	load, ok := pg.Load.ItemValue.(int)
@@ -94,8 +104,17 @@ func (svc *simService) SetPower(pg *models.Generator) {
 
 // SetPower implements the simPort by setting the pg load.
 // TODO : this shouldn't be random.
-func (svc *simService) SetLoad(pg *models.Generator) {
+func (svc *SimService) SetLoad(pg *models.Generator) {
+
+	pg.Load.ItemOldValue = pg.Load.ItemValue
+	pg.Load.PreviousTimestamp, pg.Load.ChangedTimestamp = pg.Load.ChangedTimestamp, time.Now().Format(time.RFC3339)
 	pg.Load.ItemValue = rand.Intn(100)
+}
+
+// SetPower implements the simPort by updating the pg used fuel.
+func (svc *SimService) SetFuelUsed(pg *models.Generator) {
+	pg.Fuel_used.ItemOldValue = pg.Fuel_used.ItemValue
+	pg.Fuel_used.PreviousTimestamp, pg.Fuel_used.ChangedTimestamp = pg.Fuel_used.ChangedTimestamp, time.Now().Format(time.RFC3339)
 }
 
 // Support functions :

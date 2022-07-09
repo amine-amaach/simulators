@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/amine-amaach/simulators/services/models"
 	"github.com/amine-amaach/simulators/utils"
@@ -23,7 +22,7 @@ func NewService(pGenerators []models.Generator, cfg *utils.Config, pgNumber int)
 
 // MakeMessagePayload generates random data for a given power-generator and
 // returns a map contains its topics with corresponding message payloads.
-func (svc *pgService) BuildMessagePayloads(sim *simService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage {
+func (svc *pgService) BuildPGMessagePayloads(sim *SimService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage {
 
 	type pgPayload struct {
 		Name     string
@@ -32,15 +31,22 @@ func (svc *pgService) BuildMessagePayloads(sim *simService, pg *models.Generator
 		BaseFuel float32
 	}
 
-	msgPayloads := make(map[string]json.RawMessage, 6)
+	msgPayloads := make(map[string]json.RawMessage, 1)
 
-	// For encoding pg general message payload
+	// Add power-generator general infos that gets published once.
 	jsonBytes, err := json.Marshal(pgPayload{Name: pg.GeneratorID, Lat: pg.Lat, Lon: pg.Lon, BaseFuel: pg.Base_fuel.ItemValue.(float32)})
 	if err != nil {
 		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
 	} else {
 		msgPayloads[pg.GeneratorTopic] = jsonBytes
 	}
+	
+	return msgPayloads
+}
+
+// Update used to update the power-generator tags message payload and republish it.
+func (svc *pgService) Update(sim *SimService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage {
+	msgPayloads := make(map[string]json.RawMessage, 5)
 
 	// For each tag of the generator encode its message payload
 	// As we don't have a lot of tags, it is fine to do it by hand.
@@ -50,14 +56,12 @@ func (svc *pgService) BuildMessagePayloads(sim *simService, pg *models.Generator
 	marshalLoad(sim, pg, msgPayloads, logger)
 	marshalTemperature(sim, pg, msgPayloads, logger)
 	marshalPower(sim, pg, msgPayloads, logger)
-	marshalBaseFuel(sim, pg, msgPayloads, logger)
 	marshalCurrentFuel(sim, pg, msgPayloads, logger)
 	marshalFuelUsed(sim, pg, msgPayloads, logger)
 
 	// In case there is an error, we return the map with the encoded
 	// payloads. The map could be empty in case all the encoding failed.
 	return msgPayloads
-
 }
 
 // BuildPowerGenerators returns a slice of power-generators of length nb.
@@ -89,7 +93,6 @@ func (svc *pgService) initPG(pg *models.Generator, pgNumber int) {
 
 	pg.Base_fuel = models.NewMessage(baseFuel, "BaseFuel", fmt.Sprint(faker.UnixTime()), "FLOAT32")
 	{
-		pg.Base_fuel.PreviousTimestamp = time.Now().Format(time.RFC3339)
 		pg.Base_fuel.ItemOldValue = baseFuel
 
 	}
@@ -109,9 +112,7 @@ func (svc *pgService) buildPublishTopicString(g *models.Generator, cfg *utils.Co
 
 // marshXXX() used to return the JSON encoding of a message payload.
 
-func marshalTemperature(sim *simService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
-	pg.Temperature.ItemOldValue = pg.Temperature.ItemValue
-	pg.Temperature.PreviousTimestamp, pg.Temperature.ChangedTimestamp = pg.Temperature.ChangedTimestamp, time.Now().Format(time.RFC3339)
+func marshalTemperature(sim *SimService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
 	sim.SetTemperature(pg)
 	if jsonBytes, err := json.Marshal(pg.Temperature); err != nil {
 		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
@@ -120,9 +121,7 @@ func marshalTemperature(sim *simService, pg *models.Generator, msgPayloads map[s
 	}
 }
 
-func marshalPower(sim *simService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
-	pg.Power.ItemOldValue = pg.Power.ItemValue
-	pg.Power.PreviousTimestamp, pg.Power.ChangedTimestamp = pg.Power.ChangedTimestamp, time.Now().Format(time.RFC3339)
+func marshalPower(sim *SimService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
 	sim.SetPower(pg)
 	if jsonBytes, err := json.Marshal(pg.Power); err != nil {
 		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
@@ -131,9 +130,7 @@ func marshalPower(sim *simService, pg *models.Generator, msgPayloads map[string]
 	}
 }
 
-func marshalLoad(sim *simService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
-	pg.Load.ItemOldValue = pg.Load.ItemValue
-	pg.Load.PreviousTimestamp, pg.Load.ChangedTimestamp = pg.Load.ChangedTimestamp, time.Now().Format(time.RFC3339)
+func marshalLoad(sim *SimService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
 	sim.SetLoad(pg)
 	if jsonBytes, err := json.Marshal(pg.Load); err != nil {
 		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
@@ -142,9 +139,7 @@ func marshalLoad(sim *simService, pg *models.Generator, msgPayloads map[string]j
 	}
 }
 
-func marshalCurrentFuel(sim *simService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
-	pg.CurrentFuel.ItemOldValue = pg.CurrentFuel.ItemValue
-	pg.CurrentFuel.PreviousTimestamp, pg.CurrentFuel.ChangedTimestamp = pg.CurrentFuel.ChangedTimestamp, time.Now().Format(time.RFC3339)
+func marshalCurrentFuel(sim *SimService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
 	sim.SetFuelLevel(pg)
 	if jsonBytes, err := json.Marshal(pg.CurrentFuel); err != nil {
 		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
@@ -153,22 +148,13 @@ func marshalCurrentFuel(sim *simService, pg *models.Generator, msgPayloads map[s
 	}
 }
 
-func marshalFuelUsed(sim *simService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
-	pg.Fuel_used.ItemOldValue = pg.Fuel_used.ItemValue
-	pg.Fuel_used.PreviousTimestamp, pg.Fuel_used.ChangedTimestamp = pg.Fuel_used.ChangedTimestamp, time.Now().Format(time.RFC3339)
+func marshalFuelUsed(sim *SimService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
 	// Fuel used is updated when calling SetFuelLevel()
+	// SetFuelUsed updates old values.
+	sim.SetFuelUsed(pg)
 	if jsonBytes, err := json.Marshal(pg.Fuel_used); err != nil {
 		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
 	} else {
 		msgPayloads[pg.Fuel_used.ItemTopic] = jsonBytes
-	}
-}
-
-func marshalBaseFuel(sim *simService, pg *models.Generator, msgPayloads map[string]json.RawMessage, logger *zap.SugaredLogger) {
-	// Base fuel is set only once when creating the pg instance.
-	if jsonBytes, err := json.Marshal(pg.Base_fuel); err != nil {
-		logger.Errorf("Couldn't marshal message payload ❌ %v", err)
-	} else {
-		msgPayloads[pg.Base_fuel.ItemTopic] = jsonBytes
 	}
 }

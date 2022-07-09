@@ -3,7 +3,9 @@ package ports
 import (
 	"encoding/json"
 
+	"github.com/amine-amaach/simulators/services"
 	"github.com/amine-amaach/simulators/services/models"
+	"github.com/amine-amaach/simulators/utils"
 	"go.uber.org/zap"
 )
 
@@ -12,9 +14,13 @@ import (
 type PgPort interface {
 
 	// BuildPowerGenerators returns a slice of power-generators of length nb.
-	BuildPowerGenerators(nb int) []models.Generator
+	BuildPowerGenerators(pGenerators []models.Generator, cfg *utils.Config, nb int)
 
-	// MakeMessagePayload generates random data for a given power-generator and
-	// returns a map contains its topics with corresponding message payloads.
-	BuildMessagePayloads(pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage
+	// BuildPGMessagePayloads returns a map contains the power-generator general info
+	// (identification infos) with the corresponding topic.
+	BuildPGMessagePayloads(sim *services.SimService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage
+
+	// Update used to generate/update the power-generator tags message payload.
+	// it returns a map contains the pg topics with corresponding message payloads.
+	Update(sim *services.SimService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage
 }

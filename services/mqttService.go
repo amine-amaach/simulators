@@ -21,7 +21,7 @@ func NewMqttService() *mqttService {
 }
 
 //Connect implements the mqttPort interface by creating an MQTT client.
-func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, cfg utils.Config) (*autopaho.ConnectionManager, context.CancelFunc, error) {
+func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, cfg *utils.Config) (*autopaho.ConnectionManager, error) {
 
 	MQTTServerURL, err := url.Parse(cfg.ServerURL)
 
@@ -56,24 +56,22 @@ func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, c
 
 	cliCfg.SetUsernamePassword(cfg.User, []byte(cfg.Pwd))
 
-	ctx, cancel := context.WithCancel(ctx)
 	cm, err := autopaho.NewConnection(ctx, cliCfg)
 	if err != nil {
 		logger.Errorf("EdgeConnector failed initial MQTT connection to %s ❌ [%v]", cliCfg.BrokerUrls, err)
 	}
+
 	// AwaitConnection will return immediately if connection is up; adding this call stops publication whilst
 	// connection is unavailable.
 	err = cm.AwaitConnection(ctx)
-	return cm, cancel, err
-
+	return cm, err
 }
 
 //Close implements the mqttPort interface by closing the MQTT client.
-func (svc mqttService) Close(cancel context.CancelFunc, logger *zap.SugaredLogger) {
-	logger.Info(utils.Colorize("MQTT Connection Closed ✖️\n", utils.Magenta))
-	if cancel != nil {
-		cancel()
-	}
+func (svc mqttService) Close(ctx context.Context, logger *zap.SugaredLogger) {
+	defer logger.Info(utils.Colorize("MQTT Connection Closed ✖️\n", utils.Magenta))
+	_, cancel := context.WithCancel(ctx)
+	cancel()
 }
 
 // Publish implements the mqttPort interface by publishing the payload message to the corresponding topic
@@ -99,9 +97,10 @@ func (svc mqttService) Publish(ctx context.Context, cm *autopaho.ConnectionManag
 // parse() decodes(unmarshals) the payload message to log the published message payload.
 func parse(payload json.RawMessage, logger *zap.SugaredLogger, topic string) {
 	type pgPayload struct {
-		Name string
-		Lat  float32
-		Lon  float32
+		Name     string
+		Lat      float32
+		Lon      float32
+		BaseFuel float32
 	}
 	// Find the payload type(struct) and log it, else do nothing.
 	message := models.Message{}
@@ -111,7 +110,7 @@ func parse(payload json.RawMessage, logger *zap.SugaredLogger, topic string) {
 		err = json.Unmarshal(payload, &gen)
 		if err == nil && gen.Name != "" {
 			logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ✅\n", "Message Payload Published to : ", topic), utils.Green),
-				"Name", gen.Name, "Lat", gen.Lat, "Lon", gen.Lon)
+				"Name", gen.Name, "Lat", gen.Lat, "Lon", gen.Lon, "Base Fuel", gen.BaseFuel)
 		}
 	} else if message.ItemId != "" {
 		logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ✅\n", "Message Payload Published to : ", topic), utils.Green),

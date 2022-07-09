@@ -15,11 +15,12 @@ type Message struct {
 
 func NewMessage(value interface{}, name string, id string, datType string) Message {
 	return Message{
-		ItemValue:        value,
-		ItemName:         name,
-		ItemId:           id,
-		ItemDataType:     datType,
-		ChangedTimestamp: time.Now().Format(time.RFC3339),
+		ItemValue:         value,
+		ItemName:          name,
+		ItemId:            id,
+		ItemDataType:      datType,
+		ChangedTimestamp:  time.Now().Format(time.RFC3339),
+		PreviousTimestamp: time.Now().Format(time.RFC3339),
 	}
 
 }
