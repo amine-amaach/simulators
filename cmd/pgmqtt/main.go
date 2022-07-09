@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"github.com/amine-amaach/simulators/services"
 	"github.com/amine-amaach/simulators/services/models"
@@ -9,6 +11,9 @@ import (
 )
 
 func main() {
+	// Set random source for math/rand generator
+	rand.Seed(time.Now().UnixNano())
+
 	ctx := context.Background()
 
 	logger := utils.NewLogger()
