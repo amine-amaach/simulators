@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/amine-amaach/simulators/services"
 	"github.com/amine-amaach/simulators/services/models"
@@ -10,12 +9,21 @@ import (
 )
 
 func main() {
-	// Load Configuration
-	cfg := utils.NewConfig(utils.NewLogger())
+	ctx := context.Background()
+
+	logger := utils.NewLogger()
+
+	cfg := utils.NewConfig(logger)
+
 	svc := services.NewMqttService()
 	cm, cancel, _ := svc.Connect(context.Background(), utils.NewLogger(), *cfg)
-	payload := models.Generator{Lon: 12.32, GeneratorID: "HJHSSMDSJDSKD"}
-	bytes, _ := json.Marshal(payload)
-	svc.Publish(context.Background(), cm, utils.NewLogger(), "Gen/", bytes, 0, false)
+
+	pGenerators := make([]models.Generator, 1)
+
+	pgService := services.NewService(pGenerators, cfg, 1)
+
+	simSvc := services.NewSimService()
+
+	svc.Publish(ctx, cm, logger, pgService.BuildMessagePayloads(simSvc, &pGenerators[0], logger), 0, false)
 	svc.Close(cancel, utils.NewLogger())
 }

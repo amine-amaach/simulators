@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/eclipse/paho.golang v0.10.0
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

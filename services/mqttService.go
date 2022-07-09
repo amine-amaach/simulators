@@ -77,35 +77,41 @@ func (svc mqttService) Close(cancel context.CancelFunc, logger *zap.SugaredLogge
 }
 
 // Publish implements the mqttPort interface by publishing the payload message to the corresponding topic
-func (svc mqttService) Publish(ctx context.Context, cm *autopaho.ConnectionManager, logger *zap.SugaredLogger, topic string, payload json.RawMessage, qos byte, retain bool) {
-	logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ⌛\n", "Sending Message Payload for : ", topic), utils.Yellow))
-	pubStruct := &paho.Publish{
-		QoS:        qos,
-		Topic:      topic,
-		Retain:     retain,
-		Properties: nil,
-		Payload:    payload,
-	}
-	pubResp, publishErr := cm.Publish(ctx, pubStruct)
-	if publishErr != nil {
-		logger.Errorf("MQTT publish error ❌ [%s] / [%+v]", publishErr, pubResp)
-	} else {
-		logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ✅\n", "Message Payload Published to : ", topic), utils.Green))
-		parse(payload, logger, topic)
+func (svc mqttService) Publish(ctx context.Context, cm *autopaho.ConnectionManager, logger *zap.SugaredLogger, msgPayloads map[string]json.RawMessage, qos byte, retain bool) {
+	for topic, payload := range msgPayloads {
+		logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ⌛\n", "Sending Message Payload for : ", topic), utils.Yellow))
+		pubStruct := &paho.Publish{
+			QoS:        qos,
+			Topic:      topic,
+			Retain:     retain,
+			Properties: nil,
+			Payload:    payload,
+		}
+		pubResp, publishErr := cm.Publish(ctx, pubStruct)
+		if publishErr != nil {
+			logger.Errorf("MQTT publish error ❌ [%s] / [%+v]", publishErr, pubResp)
+		} else {
+			parse(payload, logger, topic)
+		}
 	}
 }
 
 // parse() decodes(unmarshals) the payload message to log the published message payload.
 func parse(payload json.RawMessage, logger *zap.SugaredLogger, topic string) {
+	type pgPayload struct {
+		Name string
+		Lat  float32
+		Lon  float32
+	}
 	// Find the payload type(struct) and log it, else do nothing.
 	message := models.Message{}
 	err := json.Unmarshal(payload, &message)
 	if err == nil && message.ItemId == "" {
-		gen := models.Generator{}
+		gen := pgPayload{}
 		err = json.Unmarshal(payload, &gen)
-		if err == nil && gen.GeneratorID != "" {
+		if err == nil && gen.Name != "" {
 			logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ✅\n", "Message Payload Published to : ", topic), utils.Green),
-				"Name", gen.GeneratorID, "Lat", gen.Lat, "Lon", gen.Lon)
+				"Name", gen.Name, "Lat", gen.Lat, "Lon", gen.Lon)
 		}
 	} else if message.ItemId != "" {
 		logger.Infow(utils.Colorize(fmt.Sprintf("%s[%s] ✅\n", "Message Payload Published to : ", topic), utils.Green),
