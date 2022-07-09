@@ -1,0 +1,17 @@
+{
+    "MQTT_SERVER_URL":"mqtt://localhost:1883",
+    "MQTT_SERVER_USER": "admin",
+    "MQTT_SERVER_PWD": "public",
+    "MQTT_SERVER_RETAIN": "false",
+    "MQTT_SERVER_QOS": 3,
+    "MQTT_CLIENT_ID": "pg_simulator",
+    "MQTT_KEEP_ALIVE": 300, 
+    "MQTT_RETRY_DELAY": 10,
+    "SITE": "Site",
+    "AREA": "Area",
+    "RANDOM_DELAY_BETWEEN_MESSAGES": "true",
+    "DELAY_BETWEEN_MESSAGES_MIN": 5,
+    "DELAY_BETWEEN_MESSAGES_MAX": 10,
+    "GENERATORS_NUMBER": 2,
+    "GENERATORS_NUMBER_LIMIT": 50
+}
