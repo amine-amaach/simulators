@@ -1,0 +1,10 @@
+version: "3.2"
+services:
+  pgmqtt:
+    build:
+      context: .
+      dockerfile: pgmqtt/Dockerfile
+    restart: always
+    volumes:
+    - .:/go/src/simulators
+    container_name: pgmqtt
