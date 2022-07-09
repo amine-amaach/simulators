@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -18,7 +19,7 @@ func main() {
 	// Set random source for math/rand generator
 	rand.Seed(time.Now().UnixNano())
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	logger := utils.NewLogger()
 	defer logger.Sync()
@@ -26,7 +27,7 @@ func main() {
 	cfg := utils.NewConfig(logger)
 
 	mqttService := services.NewMqttService()
-	cm, err := mqttService.Connect(ctx, logger, cfg)
+	cm := mqttService.Connect(ctx, logger, cfg)
 
 	pGenerators := make([]models.Generator, cfg.GeneratorsNumber)
 
@@ -34,10 +35,7 @@ func main() {
 
 	simService := services.NewSimService()
 
-	var wg sync.WaitGroup
-	wg.Add(cfg.GeneratorsNumber)
-
-	for _, pg := range pGenerators {
+	simulator := func(pg models.Generator, wg sync.WaitGroup) {
 		go func(pg models.Generator) {
 			defer wg.Done()
 
@@ -45,25 +43,23 @@ func main() {
 			mqttService.Publish(ctx, cm, logger, pgService.Update(simService, &pg, logger), 0, false)
 
 			for {
-				if cm.AwaitConnection(ctx) != nil { // Should only happen when context is cancelled
-					logger.Warnf("publisher done (AwaitConnection: %s) ✖️", err.Error())
-					return
-				}
-
 				select {
 				case <-time.After(time.Duration(cfg.DelayBetweenMessagesMin) * time.Second):
 					mqttService.Publish(ctx, cm, logger, pgService.Update(simService, &pg, logger), 0, false)
 				case <-ctx.Done():
-					logger.Warnf("publisher done : %s ✖️", ctx.Err())
+					logger.Warnf(utils.Colorize(fmt.Sprintf("publisher done for [%s] : %s ✖️", pg.GeneratorTopic, ctx.Err()), utils.Cyan))
 					return
 				}
 			}
 		}(pg)
-
 	}
 
-	time.Sleep(time.Second * 6)
-	mqttService.Close(ctx, logger)
+	wg := sync.WaitGroup{}
+	wg.Add(cfg.GeneratorsNumber)
+
+	for _, pg := range pGenerators {
+		simulator(pg, wg)
+	}
 
 	// Wait for a signal before exiting
 	sig := make(chan os.Signal, 1)
@@ -71,6 +67,6 @@ func main() {
 	signal.Notify(sig, syscall.SIGTERM)
 
 	<-sig
-	mqttService.Close(ctx, logger)
+	mqttService.Close(cancel, logger)
 	logger.Warn(utils.Colorize("Signal caught ❌ Exiting...", utils.Magenta))
 }

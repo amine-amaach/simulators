@@ -21,7 +21,7 @@ func NewMqttService() *mqttService {
 }
 
 //Connect implements the mqttPort interface by creating an MQTT client.
-func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, cfg *utils.Config) (*autopaho.ConnectionManager, error) {
+func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, cfg *utils.Config) *autopaho.ConnectionManager {
 
 	MQTTServerURL, err := url.Parse(cfg.ServerURL)
 
@@ -63,15 +63,18 @@ func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, c
 
 	// AwaitConnection will return immediately if connection is up; adding this call stops publication whilst
 	// connection is unavailable.
-	err = cm.AwaitConnection(ctx)
-	return cm, err
+	cm.AwaitConnection(ctx)
+	return cm
 }
 
 //Close implements the mqttPort interface by closing the MQTT client.
-func (svc mqttService) Close(ctx context.Context, logger *zap.SugaredLogger) {
-	defer logger.Info(utils.Colorize("MQTT Connection Closed ✖️\n", utils.Magenta))
-	_, cancel := context.WithCancel(ctx)
-	cancel()
+func (svc mqttService) Close(cancel context.CancelFunc, logger *zap.SugaredLogger) {
+	if cancel != nil {
+		defer cancel()
+		logger.Info(utils.Colorize("MQTT Connection Closed ✖️\n", utils.Magenta))
+	} else {
+		logger.Warnf(utils.Colorize("There is no MQTT Connection ✖️\n", utils.Magenta))
+	}
 }
 
 // Publish implements the mqttPort interface by publishing the payload message to the corresponding topic
