@@ -1,11 +1,26 @@
-FROM golang
+# Build:
+FROM golang as build
 
-RUN mkdir -p /go/src/simulators
+# Set the Current Working Directory inside the container
+WORKDIR /simulators/pgmqtt
 
-ADD . /go/src/simulators
+# Populate the module cache based on the go.{mod,sum} files.
+COPY go.mod .
+COPY go.sum .
 
-RUN go get  -t -v ./...
-RUN go get  github.com/canthefason/go-watcher
-RUN go install github.com/canthefason/go-watcher/cmd/watcher
+# RUN go mod download
 
-ENTRYPOINT  watcher -run simulators/pgmqtt/cmd/  -watch simulators/pgmqtt
+COPY . .
+
+# Build the Go Microservice
+RUN CGO_ENABLED=0 go build -o ./out/pgmqtt ./cmd/pgmqtt/
+
+# Deployement:
+# Start fresh from a smaller image
+FROM alpine:latest
+
+COPY --from=build /simulators/pgmqtt/out/pgmqtt /simulators/pgmqtt
+COPY --from=build /simulators/pgmqtt/configs/ /configs/
+
+
+ENTRYPOINT  ["/simulators/pgmqtt"]

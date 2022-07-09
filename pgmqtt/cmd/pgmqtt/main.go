@@ -16,6 +16,21 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	version = "v1.0.0"
+	website = "https://www.linkedin.com/in/amine-amaach/"
+	banner  = `
+	 ____                                    ____                                 _                 __  __   ___  _____  _____ 
+	|  _ \  ___ __      __ ___  _ __        / ___|  ___  _ __    ___  _ __  __ _ | |_  ___   _ __  |  \/  | / _ \|_   _||_   _|
+	| |_) |/ _ \\ \ /\ / // _ \| '__|_____ | |  _  / _ \| '_ \  / _ \| '__|/ _' || __|/ _ \ | '__| | |\/| || | | | | |    | |
+	|  __/| (_) |\ V  V /|  __/| |  |_____|| |_| ||  __/| | | ||  __/| |  | (_| || |_| (_) || |    | |  | || |_| | | |    | |
+	|_|    \___/  \_/\_/  \___||_|          \____| \___||_| |_| \___||_|   \__,_| \__|\___/ |_|    |_|  |_| \__\_\ |_|    |_| %s
+	Power-Generator MQTT Simulator
+	___________________________________________________________________________________________________________________O/___________
+	%s                                                                          O\           
+	`
+)
+
 var (
 	// Viper Config used to handle config files and env variables.
 	cfg *utils.Config
@@ -42,7 +57,9 @@ func init() {
 }
 
 func main() {
-	fmt.Println(cfg.RandomDelayBetweenMessages, cfg.DelayBetweenMessagesMin)
+
+	// Print Banner
+	fmt.Println(utils.Colorize(fmt.Sprintf(banner, version, website), utils.Cyan))
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -55,9 +72,7 @@ func main() {
 
 	simService := services.NewSimService()
 
-	//
-	// Handle Random delay between messages :
-	//
+	// ####### Handle Random delay between messages :
 	wg := sync.WaitGroup{}
 	wg.Add(cfg.GeneratorsNumber)
 
@@ -74,7 +89,7 @@ func main() {
 				case <-time.After(time.Duration(r) * time.Second): // update the delay
 					// If RANDOM_DELAY_BETWEEN_MESSAGES == true set the delayBetweenMessages between the messages randomly.
 					if cfg.RandomDelayBetweenMessages {
-						r = rand.Float64() * float64(cfg.DelayBetweenMessagesMax)
+						r = float64(cfg.DelayBetweenMessagesMin) + rand.Float64()*float64(cfg.DelayBetweenMessagesMax)
 						randChannel <- r
 					} else {
 						r = float64(cfg.DelayBetweenMessagesMin)

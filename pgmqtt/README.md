@@ -1,36 +1,36 @@
 <div align="center">
 
-  <img src="docs/power-generator.png" alt="logo"/>
-  <h1>MQTT Power-Generator</h1>
+  <img src="docs/simulators.png" alt="logo"/>
+  <h1>MQTT simulators</h1>
   
   <p>
-    An MQTT Power-Generator Simulator
+    An MQTT simulators Simulator
   </p>
   
 <!-- Badges -->
 <p>
-  <a href="https://github.com/amine-amaach/power-generator/graphs/contributors">
-    <img src="https://img.shields.io/github/contributors/amine-amaach/power-generator" alt="contributors" />
+  <a href="https://github.com/amine-amaach/simulators/graphs/contributors">
+    <img src="https://img.shields.io/github/contributors/amine-amaach/simulators" alt="contributors" />
   </a>
-  <a href="https://github.com/amine-amaach/power-generator/network/members">
-    <img src="https://img.shields.io/github/forks/amine-amaach/power-generator" alt="forks" />
+  <a href="https://github.com/amine-amaach/simulators/network/members">
+    <img src="https://img.shields.io/github/forks/amine-amaach/simulators" alt="forks" />
   </a>
-  <a href="https://github.com/amine-amaach/power-generator/stargazers">
-    <img src="https://img.shields.io/github/stars/amine-amaach/power-generator" alt="stars" />
+  <a href="https://github.com/amine-amaach/simulators/stargazers">
+    <img src="https://img.shields.io/github/stars/amine-amaach/simulators" alt="stars" />
   </a>
-  <a href="https://github.com/amine-amaach/power-generator/issues/">
-    <img src="https://img.shields.io/github/issues/amine-amaach/power-generator" alt="open issues" />
+  <a href="https://github.com/amine-amaach/simulators/issues/">
+    <img src="https://img.shields.io/github/issues/amine-amaach/simulators" alt="open issues" />
   </a>
 </p>
    
 <h4>
-    <a href="https://github.com/amine-amaach/power-generator/">View Demo</a>
+    <a href="https://github.com/amine-amaach/simulators/">View Demo</a>
   <span> · </span>
-    <a href="https://github.com/amine-amaach/power-generator">Documentation</a>
+    <a href="https://github.com/amine-amaach/simulators">Documentation</a>
   <span> · </span>
-    <a href="https://github.com/amine-amaach/power-generator/issues/">Report Bug</a>
+    <a href="https://github.com/amine-amaach/simulators/issues/">Report Bug</a>
   <span> · </span>
-    <a href="https://github.com/amine-amaach/power-generator/issues/">Request Feature</a>
+    <a href="https://github.com/amine-amaach/simulators/issues/">Request Feature</a>
   </h4>
 </div>
 
@@ -107,13 +107,13 @@ To run tests, run the following command
 Clone the project
 
 ```bash
-  git clone git@github.com:amine-amaach/power-generator.git
+  git clone git@github.com:amine-amaach/simulators.git
 ```
 
 Go to the project directory
 
 ```bash
-  cd power-generator
+  cd simulators/pgmqtt
 ```
 
 <!-- Install dependencies
@@ -125,7 +125,7 @@ Go to the project directory
 Start the simulator
 
 ```bash
-  make run
+  go run cmd/pgmqtt/main.go
 ```
 
 
@@ -148,6 +148,8 @@ function App() {
 <!-- Roadmap -->
 ## 🛣️ Roadmap
 
+- [x] Randomize the delay between messages separately for each generator.
+- [x] Simulate multiple generators in a single microservice. 
 - [x] Concurrent Simulator.
 - [ ] Set up TLS connection.
 
@@ -155,8 +157,8 @@ function App() {
 <!-- Contributing -->
 ## 👋 Contributing
 
-<a href="https://github.com/amine-amaach/power-generator/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=amine-amaach/power-generator" />
+<a href="https://github.com/amine-amaach/simulators/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=amine-amaach/simulators" />
 </a>
 
 
@@ -174,7 +176,7 @@ Distributed under the no License. See LICENSE.txt for more information.
 
 Amine Amaach - [LinkedIn](https://www.linkedin.com/in/amine-amaach/) - [Email](amine.amaach@um6p.ma)
 
-Project Link: [https://github.com/amine-amaach/power-generator.git](https://github.com/amine-amaach/power-generator.git)
+Project Link: [https://github.com/amine-amaach/simulators.git](https://github.com/amine-amaach/simulators.git)
 
 
 <!-- Acknowledgments -->
@@ -182,7 +184,7 @@ Project Link: [https://github.com/amine-amaach/power-generator.git](https://gith
 
 <!-- Use this section to mention useful resources and libraries that you have used in your projects. -->
 
- - [Libre Technologies](https://github.com/Spruik/libre-common)
- - [InfluxDB-Roadshow-Training](https://github.com/InfluxCommunity/InfluxDB-Roadshow-Training)
+ - [InfluxDB-Roadshow-Training](https://github.com/InfluxCommunity/InfluxDB-Roadshow-Training) 
  - [Zap](https://github.com/uber-go/zap)
  - [Viper](https://github.com/spf13/viper)
+ - [Libre Technologies](https://github.com/Spruik/libre-common)

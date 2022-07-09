@@ -1,10 +1,50 @@
-version: "3.2"
+version: "3.9"
 services:
-  pgmqtt:
-    build:
-      context: .
-      dockerfile: pgmqtt/Dockerfile
+  mqtt:
+    image:  emqx/emqx:4.3.8
+    ports:
+      - 1883:1883
+      - 8083:8083
+      - 18083:18083
     restart: always
+    environment:
+      - EMQX_LOADED_PLUGINS=emqx_recon,emqx_retainer,emqx_management,emqx_dashboard,emqx_auth_mnesia
+      - EMQX_ALLOW_ANONYMOUS=true
+      - EMQX_ACL_NOMATCH=allow
+    container_name: mqtt-emqx
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      test: ["CMD", "curl", "-f", "http://mqtt:18083"]
+    networks:
+      - simulators
+  pgmqtt:
+    image: simulators-pgmqtt:latest
+    restart: always
+    container_name: simulators-pgmqtt
     volumes:
-    - .:/go/src/simulators
-    container_name: pgmqtt
+      - ./simulators-configs/pgmqtt/config.json:/configs/config.json
+    environment:
+      MQTT_SERVER_URL: mqtt://mqtt:1883
+      MQTT_SERVER_USER: admin
+      MQTT_SERVER_PWD: public
+      MQTT_SERVER_RETAIN: 'false'
+      MQTT_SERVER_QOS: 3
+      MQTT_CLIENT_ID: 'pg_simulator'
+      MQTT_KEEP_ALIVE: 300
+      MQTT_RETRY_DELAY: 10
+      SITE: 'Site'
+      AREA: 'Area'
+      RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
+      DELAY_BETWEEN_MESSAGES_MIN: 5
+      DELAY_BETWEEN_MESSAGES_MAX: 10
+      GENERATORS_NUMBER: 5
+      GENERATORS_NUMBER_LIMIT: 50
+    depends_on:
+      - 'mqtt'
+    networks:
+      - simulators
+networks:
+  simulators:
+    name: simulators-net
