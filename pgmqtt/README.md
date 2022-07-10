@@ -1,10 +1,10 @@
 <div align="center">
 
-  <img src="docs/simulators.png" alt="logo"/>
-  <h1>MQTT simulators</h1>
+  <img src="docs/pgmqtt.png" alt="logo"/>
+  <h1>Power-Generator MQTT Simulator</h1>
   
   <p>
-    An MQTT simulators Simulator
+    Power-Generator Simulator over MQTT
   </p>
   
 <!-- Badges -->
@@ -26,7 +26,7 @@
 <h4>
     <a href="https://github.com/amine-amaach/simulators/">View Demo</a>
   <span> · </span>
-    <a href="https://github.com/amine-amaach/simulators">Documentation</a>
+    <a href="https://github.com/amine-amaach/simulators/">Documentation</a>
   <span> · </span>
     <a href="https://github.com/amine-amaach/simulators/issues/">Report Bug</a>
   <span> · </span>
@@ -39,120 +39,150 @@
 <!-- Table of Contents -->
 # 📒 Table of Contents
 
-- [About the Project](#star2-about-the-project)
-  * [Screenshots](#camera-screenshots)
+- [About the Project](#✨-about-the-project)
+  * [Screenshots](#📷-screenshots)
   <!-- * [Environment Variables](#key-environment-variables) -->
-- [Run Locally](#running-run-locally)
-- [Usage](#eyes-usage)
-- [Roadmap](#compass-roadmap)
-- [Contributing](#wave-contributing)
-- [Contact](#handshake-contact)
-- [Acknowledgements](#gem-acknowledgements)
+- [Run the simulator](#🏃-run-the-simulator)
+- [Environment Variables](#⚙️-environment-variables)
+- [Contact](#🤝-contact)
+- [Contributing](#👋-contributing)
+- [Acknowledgements](#💎-acknowledgements)
 
   
 
 <!-- About the Project -->
 ## ✨ About the Project
 
+* Power generators are basically small power-plants. They allow their owners to generate electricity on-site, as a substitute or complement to electricity from the electric grid.
+* Power-Generator MQTT Simulator is a simulator producing fake IoT data over MQTT for use with the development of Industry 4.0 software solutions.
+* Each generator will write to its own MQTT topic the following tags:
+  - Load
+  - Power
+  - Temperature
+  - Fuel Level
+  - Base Fuel
+  - Used Fuel
+
+* Message payload for a generator :
+```json
+{"Name": "Generator_1", "Lat": -65.37906, "Lon": -62.64473, "Base Fuel": 909.3602}
+```
+* Message payload for a generator tag :
+```json
+{
+  "ItemTopic": "Site/Area/Power-Generators/Generator_8/Load",
+  "ItemId": "147377909",
+  "ItemName": "Load",
+  "ItemValue": 69,
+  "ItemOldValue": 71,
+  "ItemDataType": "INT",
+  "ChangedTimestamp": "2022-07-10T06:42:59+01:00",
+  "PreviousTimestamp": "2022-07-10T06:42:54+01:00"
+}
+```
+
 
 <!-- Screenshots -->
 ### 📷 Screenshots
 
-* Power generators are basically small power-plants. They allow their owners to generate electricity on-site, as a substitute or complement to electricity from the electric grid.
-* This simulator simulates these power generators data and publish it to an MQTT broker.
-
+> Power-Generator MQTT microservice :
 <div align="center"> 
   <img src="docs/screenshots/screenshot-v1.0.0.png" alt="screenshot" />
 </div>
 
-<!-- Features -->
-### 🎯 Features
-
-- Power generators data simulation.
-- Simulate multiple power generators.
-- Publish data to MQTT brokers.
-- ...
-
-
-<!-- Env Variables
-### :key: Environment Variables
-
-To run this project, you will need to add the following environment variables to your .env file
-
-`API_KEY`
-
-`ANOTHER_API_KEY` -->
-
-
-<!-- Installation
-### :gear: Installation
-
-Install my-project with npm
-
-```bash
-``` -->
-   
-<!-- Running Tests
-### :test_tube: Running Tests
-
-To run tests, run the following command
-
-```bash
-  make test
-``` -->
+> MQTT Client subscribing to topics published by the microservice
+<div align="center"> 
+  <img src="docs/screenshots/screenshot-MQTT-Explorer-v1.0.0.png" alt="screenshot" />
+</div>
 
 <!-- Run Locally -->
-### 🏃 Run Locally
+### 🏃 Run the simulator
 
-Clone the project
+* The recommended way to run the simulator is by using docker : 
+
+1. Clone this repository :
+> This `microservice` is written in GO Programming Language, this repository contains code source for this `microservice`. If you want just to use it as a docker container, it is available in DockerHub :
+`docker pull amineamaach/simulators-pgmqtt` : *you have to set the environment variables as in `docker-compose.yml` to configure MQTT connections and the simulator options*.
 
 ```bash
   git clone git@github.com:amine-amaach/simulators.git
 ```
 
-Go to the project directory
+2. Run
 
 ```bash
-  cd simulators/pgmqtt
+  docker-compose up
 ```
+* `docker-compose` will pull the images and run the containers automatically as configured in `docker-compose.yml`.
+* `docker-compose.yml` contains two images one for the simulator and the other for an EMQX MQTT Broker pre-configured with the simulator. If you want tto use your own MQTT Broker change the env variables in the file.
+* For this `microservice` you can set the configuration through the config file located in `simulators-configs/pgmqtt/config.json` or by using the environment variables in `docker-compose.yml`.
+> Note : Environment variables in `docker-compose.yml` will override the corresponding values in `config.json` if they exist.
 
-<!-- Install dependencies
-
-```bash
-  go mod tidy
-``` -->
-
-Start the simulator
-
-```bash
-  go run cmd/pgmqtt/main.go
-```
-
-
-
-<!-- Usage
-## :eyes: Usage
-
-Use this space to tell a little more about your project and how it can be used. Show additional screenshots, code samples, demos or link to other resources.
-
-
-```go
-import Component from 'my-project'
-
-function App() {
-  return <Component />
-}
-``` -->
-
+3. Use an MQTT Client to subscribe to the generators topics.
+> Default topic for all the generators : `Site/Area/Power-Generators/#` 
 
 <!-- Roadmap -->
 ## 🛣️ Roadmap
 
 - [x] Randomize the delay between messages separately for each generator.
-- [x] Simulate multiple generators in a single microservice. 
-- [x] Concurrent Simulator.
-- [ ] Set up TLS connection.
+- [x] Simulate multiple generators in a single `microservice`. 
+- [ ] Support TLS connections.
 
+## ⚙️ Environment Variables
+The application is configured using the following environmental variables:
+
+> SITE
+
+The ISA-95 Model site name of this line. SITE used as the parent topic in the MQTT structure. If this is unset, _Site_ will be used.
+
+> AREA
+
+The ISA-95 Model area name of this line. AREA used as the second topic in the MQTT structure. If this is unset, _Area_ will be used.
+
+> MQTT_SERVER_URL
+
+The address of the MQTT server.
+
+> MQTT_SERVER_USER
+
+The name of the MQTT user with subscribe and publish permissions.
+
+> MQTT_SERVER_PWD
+
+The password for the MQTT user with subscribe and publish permissions.
+
+> MQTT_CLIENT_ID
+
+The client id to use when connecting to the broker.
+
+> DELAY_BETWEEN_MESSAGES_MIN
+
+The minimum delay between messages in seconds. 
+
+> DELAY_BETWEEN_MESSAGES_MAX
+
+The maximum delay between messages in seconds. 
+
+> RANDOM_DELAY_BETWEEN_MESSAGES
+
+If set to `true` the delay between messages will be randomly generated based on `DELAY_BETWEEN_MESSAGES_MIN` and `DELAY_BETWEEN_MESSAGES_MIN` env variables, else `DELAY_BETWEEN_MESSAGES_MIN` will be set as fixed delay.
+
+> GENERATORS_NUMBER
+
+The number of generators to simulate.
+
+> GENERATORS_NUMBER_LIMIT
+
+The maximum number of generators to simulate, if `GENERATORS_NUMBER` > `GENERATORS_NUMBER_LIMIT` the number of generators will be set to `GENERATORS_NUMBER_LIMIT`
+
+
+
+<!-- Contact -->
+## 🤝 Contact
+
+Amine Amaach - [LinkedIn](https://www.linkedin.com/in/amine-amaach/) - [Email](amine.amaach@um6p.ma)
+
+Project Link: [https://github.com/amine-amaach/simulators.git](https://github.com/amine-amaach/simulators.git)
 
 <!-- Contributing -->
 ## 👋 Contributing
@@ -163,24 +193,10 @@ function App() {
 
 
 Contributions are always welcome!
-
-<!-- See `contributing.md` for ways to get started. -->
-
-<!-- License -->
-## ⚠️ License
-
-Distributed under the no License. See LICENSE.txt for more information.
-
-<!-- Contact -->
-## 🤝 Contact
-
-Amine Amaach - [LinkedIn](https://www.linkedin.com/in/amine-amaach/) - [Email](amine.amaach@um6p.ma)
-
-Project Link: [https://github.com/amine-amaach/simulators.git](https://github.com/amine-amaach/simulators.git)
-
+For major changes, please open an issue first to discuss what you would like to change.
 
 <!-- Acknowledgments -->
-## 💎 Acknowledgements
+## 💎 Acknowledgements & Inspiration
 
 <!-- Use this section to mention useful resources and libraries that you have used in your projects. -->
 
