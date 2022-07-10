@@ -30,7 +30,7 @@ services:
       MQTT_SERVER_USER: admin
       MQTT_SERVER_PWD: public
       MQTT_SERVER_RETAIN: 'false'
-      MQTT_SERVER_QOS: 3
+      MQTT_SERVER_QOS: 1
       MQTT_CLIENT_ID: 'pg_simulator'
       MQTT_KEEP_ALIVE: 300
       MQTT_RETRY_DELAY: 10
