@@ -87,12 +87,12 @@
 
 > Power-Generator MQTT microservice :
 <div align="center"> 
-  <img src="docs/screenshots/screenshot-v1.0.0.png" alt="screenshot" />
+  <img src="docs/screenshots/container.png" alt="screenshot" />
 </div>
 
 > MQTT Client subscribing to topics published by the microservice
 <div align="center"> 
-  <img src="docs/screenshots/screenshot-MQTT-Explorer-v1.0.0.png" alt="screenshot" />
+  <img src="docs/screenshots/mqttexplorer.png" alt="screenshot" />
 </div>
 
 <!-- Run Locally -->
