@@ -101,8 +101,11 @@
 * The recommended way to run the simulator is by using docker : 
 
 1. Clone this repository :
-> This `microservice` is written in GO Programming Language, this repository contains code source for this `microservice`. If you want just to use it as a docker container, it is available in DockerHub :
-`docker pull amineamaach/simulators-pgmqtt` : *you have to set the environment variables as in `docker-compose.yml` to configure MQTT connections and the simulator options*.
+> This `microservice` is written in GO Programming Language and this repository contains the code source of the `microservice`.
+
+> You can use the simulator as a docker container, it is available in DockerHub :
+`docker pull amineamaach/simulators-pgmqtt`.
+_you have to set the environment variables as in `docker-compose.yml` to configure MQTT connections and the simulator options_.
 
 ```bash
   git clone git@github.com:amine-amaach/simulators.git
@@ -113,10 +116,13 @@
 ```bash
   docker-compose up
 ```
-* `docker-compose` will pull the images and run the containers automatically as configured in `docker-compose.yml`.
-* `docker-compose.yml` contains two images one for the simulator and the other for an EMQX MQTT Broker pre-configured with the simulator. If you want tto use your own MQTT Broker change the env variables in the file.
-* For this `microservice` you can set the configuration through the config file located in `simulators-configs/pgmqtt/config.json` or by using the environment variables in `docker-compose.yml`.
-> Note : Environment variables in `docker-compose.yml` will override the corresponding values in `config.json` if they exist.
+> `docker-compose` will pull the images and run the containers automatically as configured in `docker-compose.yml`.
+
+> `docker-compose.yml` contains two images one for the simulator and the other for an EMQX MQTT Broker pre-configured with the simulator. If you want tto use your own MQTT Broker change the env variables in the file.
+
+> For this `microservice` you can set the configuration through the config file located in `simulators-configs/pgmqtt/config.json` or by using the environment variables in `docker-compose.yml`.
+
+> _Note : Environment variables in `docker-compose.yml` will override the corresponding values in `config.json` if they exist._
 
 3. Use an MQTT Client to subscribe to the generators topics.
 > Default topic for all the generators : `Site/Area/Power-Generators/#` 
@@ -133,47 +139,47 @@ The application is configured using the following environmental variables:
 
 > SITE
 
-The ISA-95 Model site name of this line. SITE used as the parent topic in the MQTT structure. If this is unset, _Site_ will be used.
+* The ISA-95 Model site name. SITE used as the parent topic in the MQTT structure. If this is unset, _Site_ will be used.
 
 > AREA
 
-The ISA-95 Model area name of this line. AREA used as the second topic in the MQTT structure. If this is unset, _Area_ will be used.
+* The ISA-95 Model area name. AREA used as the second topic in the MQTT structure. If this is unset, _Area_ will be used.
 
 > MQTT_SERVER_URL
 
-The address of the MQTT server.
+* The address of the MQTT server.
 
 > MQTT_SERVER_USER
 
-The name of the MQTT user with subscribe and publish permissions.
+* The name of the MQTT user with subscribe and publish permissions.
 
 > MQTT_SERVER_PWD
 
-The password for the MQTT user with subscribe and publish permissions.
+* The password for the MQTT user with subscribe and publish permissions.
 
 > MQTT_CLIENT_ID
 
-The client id to use when connecting to the broker.
+* The client id to use when connecting to the broker.
 
 > DELAY_BETWEEN_MESSAGES_MIN
 
-The minimum delay between messages in seconds. 
+* The minimum delay between messages in seconds. 
 
 > DELAY_BETWEEN_MESSAGES_MAX
 
-The maximum delay between messages in seconds. 
+* The maximum delay between messages in seconds. 
 
 > RANDOM_DELAY_BETWEEN_MESSAGES
 
-If set to `true` the delay between messages will be randomly generated based on `DELAY_BETWEEN_MESSAGES_MIN` and `DELAY_BETWEEN_MESSAGES_MIN` env variables, else `DELAY_BETWEEN_MESSAGES_MIN` will be set as fixed delay.
+* If set to `true` the delay between messages will be randomly generated based on `DELAY_BETWEEN_MESSAGES_MIN` and `DELAY_BETWEEN_MESSAGES_MIN` env variables, else `DELAY_BETWEEN_MESSAGES_MIN` will be set as fixed delay.
 
 > GENERATORS_NUMBER
 
-The number of generators to simulate.
+* The number of generators to simulate.
 
 > GENERATORS_NUMBER_LIMIT
 
-The maximum number of generators to simulate, if `GENERATORS_NUMBER` > `GENERATORS_NUMBER_LIMIT` the number of generators will be set to `GENERATORS_NUMBER_LIMIT`
+* The maximum number of generators to simulate, if `GENERATORS_NUMBER` > `GENERATORS_NUMBER_LIMIT` the number of generators will be set to `GENERATORS_NUMBER_LIMIT`
 
 
 
