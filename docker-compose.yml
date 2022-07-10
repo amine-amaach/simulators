@@ -20,7 +20,7 @@ services:
     networks:
       - simulators
   pgmqtt:
-    image: simulators-pgmqtt:latest
+    image: amineamaach/simulators-pgmqtt:v1.0.0
     restart: always
     container_name: simulators-pgmqtt
     volumes:
