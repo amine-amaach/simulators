@@ -24,7 +24,7 @@
 </p>
    
 <h4>
-    <a href="https://github.com/amine-amaach/simulators/">View Demo</a>
+    <a href="https://youtu.be/1XXsL2vwCGg">View Demo</a>
   <span> · </span>
     <a href="https://github.com/amine-amaach/simulators/">Documentation</a>
   <span> · </span>
