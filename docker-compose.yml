@@ -24,7 +24,7 @@ services:
     restart: always
     container_name: simulators-pgmqtt
     volumes:
-      - ./simulators-configs/pgmqtt/config.json:/configs/config.json
+      - ./sample-config/pgmqtt/config.json:/configs/config.json
     environment:
       MQTT_SERVER_URL: mqtt://mqtt:1883
       MQTT_SERVER_USER: admin

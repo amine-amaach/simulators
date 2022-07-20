@@ -120,7 +120,7 @@ _you have to set the environment variables as in `docker-compose.yml` to configu
 
 > `docker-compose.yml` contains two images one for the simulator and the other for an EMQX MQTT Broker pre-configured with the simulator. If you want tto use your own MQTT Broker change the env variables in the file.
 
-> For this `microservice` you can set the configuration through the config file located in `simulators-configs/pgmqtt/config.json` or by using the environment variables in `docker-compose.yml`.
+> For this `microservice` you can set the configuration through the config file located in `sample-config/pgmqtt/config.json` or by using the environment variables in `docker-compose.yml`.
 
 > _Note : Environment variables in `docker-compose.yml` will override the corresponding values in `config.json` if they exist._
 

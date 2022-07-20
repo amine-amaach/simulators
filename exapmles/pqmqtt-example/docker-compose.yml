@@ -1,0 +1,112 @@
+version: "3.9"
+services:
+  mqtt:
+    image:  emqx/emqx:4.3.8
+    ports:
+      - 1883:1883
+      - 8083:8083
+      - 18083:18083
+    restart: always
+    environment:
+      - EMQX_LOADED_PLUGINS=emqx_recon,emqx_retainer,emqx_management,emqx_dashboard,emqx_auth_mnesia
+      - EMQX_ALLOW_ANONYMOUS=true
+      - EMQX_ACL_NOMATCH=allow
+    container_name: mqtt-emqx
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      test: ["CMD", "curl", "-f", "http://mqtt:18083"]
+
+  influxdb:
+    image: d636ad7ee210 # TODO CHANGE VERSION TO LATEST
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2:rw
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mypasswordmypasswordmypassword
+      - DOCKER_INFLUXDB_INIT_ORG=simulators-project
+      - DOCKER_INFLUXDB_INIT_BUCKET=simulators
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytokenmytokenmytoken
+    container_name: influxdb
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://influxdb:8086"]
+
+  grafana:
+    image: 092a480a2531 # TODO CHANGE VERSION TO LATEST
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+
+  pgmqtt-dallas:
+    image: amineamaach/simulators-pgmqtt:v1.0.0
+    restart: unless-stopped
+    container_name: pgmqtt-dallas
+    volumes:
+      - ./pgmqtt-config/config.json:/configs/pgmqtt-dallas.json
+    environment:
+      MQTT_SERVER_URL: mqtt://mqtt:1883
+      MQTT_SERVER_USER: admin
+      MQTT_SERVER_PWD: public
+      SITE: 'Dallas Expressway Plant'
+      AREA: 'CMOS Facility'
+      RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
+      DELAY_BETWEEN_MESSAGES_MIN: 180
+      DELAY_BETWEEN_MESSAGES_MAX: 300
+      GENERATORS_NUMBER: 3
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+
+  pgmqtt-deer-park:
+    image: amineamaach/simulators-pgmqtt:v1.0.0
+    restart: unless-stopped
+    container_name: pgmqtt-deer-park
+    volumes:
+      - ./pgmqtt-config/config.json:/configs/pgmqtt-deer-park.json
+    environment:
+      MQTT_SERVER_URL: mqtt://mqtt:1883
+      MQTT_SERVER_USER: admin
+      MQTT_SERVER_PWD: public
+      SITE: '“Deer Park Olefins Plant'
+      AREA: 'Building 2 Electronic Assembly'
+      RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
+      DELAY_BETWEEN_MESSAGES_MIN: 220
+      DELAY_BETWEEN_MESSAGES_MAX: 380
+      GENERATORS_NUMBER: 4
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    restart: unless-stopped
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      mqtt:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
