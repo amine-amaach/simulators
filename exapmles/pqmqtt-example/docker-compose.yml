@@ -1,23 +1,5 @@
 version: "3.9"
 services:
-  mqtt:
-    image:  emqx/emqx:4.3.8
-    ports:
-      - 1883:1883
-      - 8083:8083
-      - 18083:18083
-    restart: always
-    environment:
-      - EMQX_LOADED_PLUGINS=emqx_recon,emqx_retainer,emqx_management,emqx_dashboard,emqx_auth_mnesia
-      - EMQX_ALLOW_ANONYMOUS=true
-      - EMQX_ACL_NOMATCH=allow
-    container_name: mqtt-emqx
-    healthcheck:
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      test: ["CMD", "curl", "-f", "http://mqtt:18083"]
-
   influxdb:
     image: influxdb:latest
     volumes:
@@ -50,8 +32,6 @@ services:
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
     depends_on:
-      mqtt:
-        condition: service_healthy
       influxdb:
         condition: service_healthy
 
@@ -60,20 +40,17 @@ services:
     restart: always
     container_name: pgmqtt-dallas
     volumes:
-      - ./pgmqtt-config/config.json:/configs/pgmqtt-dallas.json
+      - ./pgmqtt-config/pgmqtt-dallas.json:/configs/config.json
     environment:
-      MQTT_SERVER_URL: mqtt://mqtt:1883
-      MQTT_SERVER_USER: admin
-      MQTT_SERVER_PWD: public
+      MQTT_SERVER_URL: tcp://broker.hivemq.com:1883
       SITE: 'Dallas Expressway Plant'
       AREA: 'CMOS Facility'
+      MQTT_CLIENT_ID: 'pgmqtt-dallas'
       RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
-      DELAY_BETWEEN_MESSAGES_MIN: 180
-      DELAY_BETWEEN_MESSAGES_MAX: 300
+      DELAY_BETWEEN_MESSAGES_MIN: 3
+      DELAY_BETWEEN_MESSAGES_MAX: 15
       GENERATORS_NUMBER: 3
     depends_on:
-      mqtt:
-        condition: service_healthy
       influxdb:
         condition: service_healthy
 
@@ -82,20 +59,17 @@ services:
     restart: always
     container_name: pgmqtt-deer-park
     volumes:
-      - ./pgmqtt-config/config.json:/configs/pgmqtt-deer-park.json
+      - ./pgmqtt-config/pgmqtt-deer-park.json:/configs/config.json
     environment:
-      MQTT_SERVER_URL: mqtt://mqtt:1883
-      MQTT_SERVER_USER: admin
-      MQTT_SERVER_PWD: public
+      MQTT_SERVER_URL: tcp://broker.hivemq.com:1883
       SITE: 'Deer Park Olefins Plant'
       AREA: 'Building 2 Electronic Assembly'
+      MQTT_CLIENT_ID: 'pgmqtt-deer-park'
       RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
-      DELAY_BETWEEN_MESSAGES_MIN: 220
-      DELAY_BETWEEN_MESSAGES_MAX: 380
+      DELAY_BETWEEN_MESSAGES_MIN: 5
+      DELAY_BETWEEN_MESSAGES_MAX: 10
       GENERATORS_NUMBER: 4
     depends_on:
-      mqtt:
-        condition: service_healthy
       influxdb:
         condition: service_healthy
 
@@ -106,7 +80,5 @@ services:
     volumes:
       - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     depends_on:
-      mqtt:
-        condition: service_healthy
       influxdb:
         condition: service_healthy
