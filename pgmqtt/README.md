@@ -41,8 +41,8 @@
 
 - [About the Project](#✨-about-the-project)
   * [Screenshots](#📷-screenshots)
-  <!-- * [Environment Variables](#key-environment-variables) -->
 - [Run the simulator](#🏃-run-the-simulator)
+  * [Demo]()
 - [Environment Variables](#⚙️-environment-variables)
 - [Contact](#🤝-contact)
 - [Contributing](#👋-contributing)
@@ -118,14 +118,21 @@ _you have to set the environment variables as in `docker-compose.yml` to configu
 ```
 > `docker-compose` will pull the images and run the containers automatically as configured in `docker-compose.yml`.
 
-> `docker-compose.yml` contains two images one for the simulator and the other for an EMQX MQTT Broker pre-configured with the simulator. If you want tto use your own MQTT Broker change the env variables in the file.
+> `docker-compose.yml` contains two images one for the simulator and the other for an EMQX MQTT Broker pre-configured with the simulator. If you want to use your own MQTT Broker change the env variables in the file.
 
 > For this `microservice` you can set the configuration through the config file located in `sample-config/pgmqtt/config.json` or by using the environment variables in `docker-compose.yml`.
 
 > _Note : Environment variables in `docker-compose.yml` will override the corresponding values in `config.json` if they exist._
 
 3. Use an MQTT Client to subscribe to the generators topics.
-> Default topic for all the generators : `Site/Area/Power-Generators/#` 
+> Default topic for all the generators : `Site/Area/Power-Generators/#`
+
+### Demo :
+* Check out a real example of using this simulator :
+[Watch it on YouTube](https://youtu.be/nm6ARNTKCII)
+<div align="center"> 
+  <img src="docs/screenshots/pgmqtt-example.png" alt="pgmqtt-example" />
+</div>
 
 <!-- Roadmap -->
 ## 🛣️ Roadmap
