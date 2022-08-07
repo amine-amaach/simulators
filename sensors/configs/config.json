@@ -1,0 +1,38 @@
+{
+    "HOSTNAME": "localhost",
+    "PORT" : 46010,
+    "USERIDs": [
+        {
+            "Username" : "root",
+            "Password" : "secret"
+        },
+        {
+            "Username" : "user",
+            "Password" : "password"
+        }
+    ],
+    "SET_DELAY_BETWEEN_MESSAGES" : 5,
+    "RANDOMIZE_DELAY_BETWEEN_MESSAGES" : "true",
+    "SIMULATORS": [
+        {
+            "Name" : "Temperature",
+            "Mean" : 50.0,
+            "StandardDeviation" : 3.0
+        },
+        {
+            "Name" : "Pressure",
+            "Mean" : 80.0,
+            "StandardDeviation" : 9.0
+        },
+        {
+            "Name" : "Humidity",
+            "Mean" : 40.0,
+            "StandardDeviation" : 3.0
+        },
+        {
+            "Name" : "Air Quality",
+            "Mean" : 15.0,
+            "StandardDeviation" : 5.0
+        }
+    ]
+}
