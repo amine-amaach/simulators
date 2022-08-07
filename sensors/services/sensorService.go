@@ -27,13 +27,14 @@ func NewSensorService(mean, standardDeviation float64) *sensorService {
 	}
 }
 
-func (sensor *sensorService) CalculateNextValue() {
+func (sensor *sensorService) CalculateNextValue() float64 {
 	// first calculate how much the value will be changed
 	valueChange := rand.Float64() * sensor.stepSizeFactor
 	// second decide if the value is increased or decreased
 	factor := sensor.DecideFactor()
 	// apply valueChange and factor to value and return
-	sensor.value += valueChange * float64(factor)
+	sensor.value += valueChange * factor
+	return sensor.value
 }
 
 func (sensor sensorService) DecideFactor() float64 {
@@ -57,7 +58,7 @@ func (sensor sensorService) DecideFactor() float64 {
 	// chance with a distance of zero would mean a 50/50 chance for the
 	// randomValue to be higher or lower.
 	// The division by 50 was found by empiric testing different values.
-	chance := (sensor.standardDeviation / 2) * (distance / 50)
+	chance := (sensor.standardDeviation / 2) - (distance / 50)
 	randomValue := sensor.standardDeviation * rand.Float64()
 	// if the random value is smaller than the chance we continue in the
 	// current direction if not we change the direction.
