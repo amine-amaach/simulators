@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
 	"net"
 	"net/url"
@@ -55,7 +56,9 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity) *UaSr
 }
 
 func createUaServer(host string, port int, userIds []ua.UserNameIdentity) (*server.Server, error) {
-	ensurePKI(host)
+	if err := ensurePKI(host); err != nil {
+		log.Println(err)
+	}
 	// create the endpoint url from hostname and port
 	endpointURL := fmt.Sprintf("opc.tcp://%s:%d", host, port)
 	// create and return an opcua server
@@ -72,8 +75,8 @@ func createUaServer(host string, port int, userIds []ua.UserNameIdentity) (*serv
 			DiscoveryProfileURI: "",
 			DiscoveryURLs:       []string{endpointURL},
 		},
-		"../uaServerCerts/pki/server.crt",
-		"../uaServerCerts/pki/server.key",
+		"./uaServerCerts/pki/server.crt",
+		"./uaServerCerts/pki/server.key",
 		endpointURL,
 		server.WithBuildInfo(
 			ua.BuildInfo{
@@ -116,13 +119,13 @@ func encryptPasswords(userIds []ua.UserNameIdentity) {
 
 func ensurePKI(host string) error {
 
-	// check if ./pki already exists
-	if _, err := os.Stat("../uaServerCerts/pki"); !os.IsNotExist(err) {
+	// check if ../uaServerCerts/pki already exists
+	if _, err := os.Stat("./uaServerCerts/pki"); !os.IsNotExist(err) {
 		return nil
 	}
 
 	// make a pki directory, if not exist
-	if err := os.MkdirAll("../uaServerCerts/pki", os.ModeDir|0755); err != nil {
+	if err := os.MkdirAll("./uaServerCerts/pki", os.ModeDir|0755); err != nil {
 		return err
 	}
 
@@ -143,8 +146,8 @@ func createNewCertificate(appName, host string) error {
 	}
 
 	// get certificates path
-	certFile := "../uaServerCerts/pki/server.crt"
-	keyFile := "../uaServerCerts/pki/server.key"
+	certFile := "./uaServerCerts/pki/server.crt"
+	keyFile := "./uaServerCerts/pki/server.key"
 
 	// get local ip address.
 	conn, err := net.Dial("udp", "8.8.8.8:53")
