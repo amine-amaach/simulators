@@ -1,2 +1,3 @@
 .vscode
 ./exapmles/pqmqtt-example/influxdb/*
+./sensors/uaServerCerts/*
