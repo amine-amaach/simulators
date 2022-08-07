@@ -3,9 +3,9 @@ package ports
 import (
 	"encoding/json"
 
-	"github.com/amine-amaach/simulators/services"
-	"github.com/amine-amaach/simulators/services/models"
-	"github.com/amine-amaach/simulators/utils"
+	"github.com/amine-amaach/simulators/pgmqtt/services"
+	"github.com/amine-amaach/simulators/pgmqtt/services/models"
+	"github.com/amine-amaach/simulators/pgmqtt/utils"
 	"go.uber.org/zap"
 )
 

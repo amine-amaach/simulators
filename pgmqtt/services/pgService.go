@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/amine-amaach/simulators/services/models"
-	"github.com/amine-amaach/simulators/utils"
+	"github.com/amine-amaach/simulators/pgmqtt/services/models"
+	"github.com/amine-amaach/simulators/pgmqtt/utils"
 	"github.com/bxcodec/faker/v3"
 	"go.uber.org/zap"
 )
@@ -40,7 +40,7 @@ func (svc *pgService) BuildPGMessagePayloads(sim *SimService, pg *models.Generat
 	} else {
 		msgPayloads[pg.GeneratorTopic] = jsonBytes
 	}
-	
+
 	return msgPayloads
 }
 

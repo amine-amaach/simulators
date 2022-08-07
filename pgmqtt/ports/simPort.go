@@ -1,6 +1,6 @@
 package ports
 
-import "github.com/amine-amaach/simulators/services/models"
+import "github.com/amine-amaach/simulators/pgmqtt/services/models"
 
 type SimulatorPort interface {
 	SetTemperature(payload *models.Generator)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/amine-amaach/simulators/utils"
+	"github.com/amine-amaach/simulators/pgmqtt/utils"
 	"github.com/eclipse/paho.golang/autopaho"
 	"go.uber.org/zap"
 )

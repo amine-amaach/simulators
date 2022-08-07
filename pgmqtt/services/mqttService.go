@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/amine-amaach/simulators/services/models"
-	"github.com/amine-amaach/simulators/utils"
+	"github.com/amine-amaach/simulators/pgmqtt/services/models"
+	"github.com/amine-amaach/simulators/pgmqtt/utils"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
 	"go.uber.org/zap"
@@ -20,7 +20,7 @@ func NewMqttService() *mqttService {
 	return &mqttService{}
 }
 
-//Connect implements the mqttPort interface by creating an MQTT client.
+// Connect implements the mqttPort interface by creating an MQTT client.
 func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, cfg *utils.Config) *autopaho.ConnectionManager {
 
 	MQTTServerURL, err := url.Parse(cfg.ServerURL)
@@ -67,7 +67,7 @@ func (svc mqttService) Connect(ctx context.Context, logger *zap.SugaredLogger, c
 	return cm
 }
 
-//Close implements the mqttPort interface by closing the MQTT client.
+// Close implements the mqttPort interface by closing the MQTT client.
 func (svc mqttService) Close(cancel context.CancelFunc, logger *zap.SugaredLogger) {
 	if cancel != nil {
 		defer cancel()

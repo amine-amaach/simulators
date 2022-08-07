@@ -1,6 +1,6 @@
-module github.com/amine-amaach/simulators
+module github.com/amine-amaach/simulators/pgmqtt
 
-go 1.18
+go 1.19
 
 require go.uber.org/zap v1.21.0
 
