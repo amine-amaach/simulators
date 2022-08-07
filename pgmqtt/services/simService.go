@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/amine-amaach/simulators/services/models"
+	"github.com/amine-amaach/simulators/pgmqtt/services/models"
 )
 
 type SimService struct{}
