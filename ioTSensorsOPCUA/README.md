@@ -184,7 +184,9 @@ The application is configured using the following variables:
 * Allows you to define simulators with their parameters.
 
   > Name : The sensor's name.
+  
   > Mean : The data mean of the actual sensor.
+  
   > StandardDeviation : The data Standard Deviation of the actual sensor.
 
 > USERIDs
