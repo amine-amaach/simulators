@@ -1,5 +1,8 @@
 version: "3.9"
 services:
+###############################################################
+########################## InfluxDB ###########################
+###############################################################
   influxdb:
     image: influxdb:latest
     volumes:
@@ -21,6 +24,10 @@ services:
       retries: 5
       test: ["CMD", "curl", "-f", "http://influxdb:8086"]
 
+###############################################################
+########################## Grafana ###########################
+###############################################################
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
@@ -34,6 +41,10 @@ services:
     depends_on:
       influxdb:
         condition: service_healthy
+
+###############################################################
+################# Power Generators Simulators #################
+###############################################################
 
   pgmqtt-dallas:
     image: amineamaach/simulators-pgmqtt:v1.0.0
@@ -73,6 +84,10 @@ services:
       influxdb:
         condition: service_healthy
 
+###############################################################
+################# IoT Sensors Data Simulators #################
+###############################################################
+
   ioTSensorsOPCUA:
     image: amineamaach/sensors-opcua:v1.0.0
     restart: always
@@ -98,6 +113,10 @@ services:
     depends_on:
       influxdb:
         condition: service_healthy
+
+###############################################################
+########################## Telegraf ###########################
+###############################################################
 
   telegraf:
     image: telegraf:latest
