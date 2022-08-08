@@ -25,7 +25,11 @@
   <br><br>
 </div>
 
-> For now, I have published the first simulator `pgmqtt` written in GO that simulates power generators IoT data. Check it out [here](https://github.com/amine-amaach/simulators/tree/main/pgmqtt).
+> Check out the availible simulators : 
+
+  * [pgmqtt](https://github.com/amine-amaach/simulators/tree/main/pgmqtt).
+  
+  * [IoTSensorsOPCUA](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsOPCUA).
 #
 
 <!-- Contact -->
