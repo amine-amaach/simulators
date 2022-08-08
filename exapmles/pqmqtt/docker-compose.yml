@@ -1,0 +1,84 @@
+version: "3.9"
+services:
+  influxdb:
+    image: influxdb:latest
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2:rw
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mypasswordmypasswordmypassword
+      - DOCKER_INFLUXDB_INIT_ORG=simulators-project
+      - DOCKER_INFLUXDB_INIT_BUCKET=simulators
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytokenmytokenmytoken
+    container_name: influxdb
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://influxdb:8086"]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+  pgmqtt-dallas:
+    image: amineamaach/simulators-pgmqtt:v1.0.0
+    restart: always
+    container_name: pgmqtt-dallas
+    volumes:
+      - ./configs/pgmqtt-dallas.json:/configs/config.json
+    environment:
+      MQTT_SERVER_URL: tcp://broker.hivemq.com:1883
+      SITE: 'Dallas Expressway Plant'
+      AREA: 'CMOS Facility'
+      MQTT_CLIENT_ID: 'pgmqtt-dallas'
+      RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
+      DELAY_BETWEEN_MESSAGES_MIN: 3
+      DELAY_BETWEEN_MESSAGES_MAX: 15
+      GENERATORS_NUMBER: 3
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+  pgmqtt-deer-park:
+    image: amineamaach/simulators-pgmqtt:v1.0.0
+    restart: always
+    container_name: pgmqtt-deer-park
+    volumes:
+      - ./configs/pgmqtt-deer-park.json:/configs/config.json
+    environment:
+      MQTT_SERVER_URL: tcp://broker.hivemq.com:1883
+      SITE: 'Deer Park Olefins Plant'
+      AREA: 'Building 2 Electronic Assembly'
+      MQTT_CLIENT_ID: 'pgmqtt-deer-park'
+      RANDOM_DELAY_BETWEEN_MESSAGES: 'true'
+      DELAY_BETWEEN_MESSAGES_MIN: 5
+      DELAY_BETWEEN_MESSAGES_MAX: 10
+      GENERATORS_NUMBER: 4
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    restart: unless-stopped
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      influxdb:
+        condition: service_healthy

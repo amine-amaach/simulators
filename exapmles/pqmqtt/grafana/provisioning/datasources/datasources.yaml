@@ -1,0 +1,21 @@
+# # config file version
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    typeLogoUrl: public/app/plugins/datasource/influxdb/img/influxdb_logo.svg
+    access: proxy
+    url: http://influxdb:8086
+    basicAuth: true
+    isDefault: false
+    readOnly: false
+    editable: true
+    secureJsonData:
+      token: mytokenmytokenmytoken
+    jsonData:
+      defaultBucket: simulators
+      organization: simulators-project
+      httpMode: POST
+      version: Flux
+      tlsSkipVerify: true

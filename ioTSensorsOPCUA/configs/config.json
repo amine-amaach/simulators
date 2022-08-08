@@ -1,6 +1,4 @@
 {
-    "HOSTNAME": "localhost",
-    "PORT" : 46010,
     "USERIDs": [
         {
             "Username" : "root",

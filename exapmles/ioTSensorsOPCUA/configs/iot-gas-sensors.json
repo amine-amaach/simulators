@@ -1,0 +1,32 @@
+{
+    "SET_DELAY_BETWEEN_MESSAGES" : 7,
+    "RANDOMIZE_DELAY_BETWEEN_MESSAGES" : "true",
+    "SIMULATORS": [
+        {
+            "Name" : "Gas NO2",
+            "Mean" : 35.9,
+            "StandardDeviation" : 2.0
+        },
+        {
+            "Name" : "Gas Temperature",
+            "Mean" : 25.6,
+            "StandardDeviation" : 0.3
+        },
+        {
+            "Name" : "Gas Humidity",
+            "Mean" : 39.7,
+            "StandardDeviation" : 0.8
+        },
+        {
+            "Name" : "Sensor Calibration",
+            "Mean" : 40.2,
+            "StandardDeviation" : 0.1
+        }
+    ],
+    "USERIDs": [
+        {
+            "Username" : "root",
+            "Password" : "secret"
+        }
+    ]
+}

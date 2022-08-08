@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/spf13/viper"
 )
@@ -20,21 +19,19 @@ type params struct {
 }
 
 type Config struct {
-	Hostname         string    `mapstructure:"HOSTNAME"`
-	Port             int       `mapstructure:"PORT"`
-	UserIds          []UserIds `mapstructure:"USERIDs"`
-	SET_DELAY_BETWEEN_MESSAGES int `mapstructure:"SET_DELAY_BETWEEN_MESSAGES"`
-	RANDOMIZE_DELAY_BETWEEN_MESSAGES bool `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
-	SimulatorsParams []params  `mapstructure:"SIMULATORS"`
+	UserIds                          []UserIds `mapstructure:"USERIDs"`
+	SET_DELAY_BETWEEN_MESSAGES       int       `mapstructure:"SET_DELAY_BETWEEN_MESSAGES"`
+	RANDOMIZE_DELAY_BETWEEN_MESSAGES bool      `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
+	SimulatorsParams                 []params  `mapstructure:"SIMULATORS"`
 }
 
-func GetConfig() Config{
+func GetConfig() Config {
 	v := viper.New()
 	var config Config
 
-	v.SetConfigName("config") // name of config file (without extension)
-	v.SetConfigType("json")   // REQUIRED if the config file does not have the extension in the name
-	v.AddConfigPath("./configs")      // look for config in the working directory
+	v.SetConfigName("config")    // name of config file (without extension)
+	v.SetConfigType("json")      // REQUIRED if the config file does not have the extension in the name
+	v.AddConfigPath("./configs") // look for config in the working directory
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -58,9 +55,6 @@ func GetConfig() Config{
 }
 
 func setDefault(v *viper.Viper) {
-	hn, _ := os.Hostname()
-	v.SetDefault("HOSTNAME", hn)
-	v.SetDefault("PORT", 46010)
 	v.SetDefault("USERIDs", []UserIds{
 		{
 			Username: "root",

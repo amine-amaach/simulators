@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/amine-amaach/simulators/sensors/services"
-	"github.com/amine-amaach/simulators/sensors/utils"
+	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/services"
+	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/utils"
 	"github.com/awcullen/opcua/server"
 	"github.com/awcullen/opcua/ua"
 	"github.com/pkg/errors"
@@ -40,7 +40,7 @@ func main() {
 |___\___/|_|   |____/ \___|_| |_|___/\___/|_|  |___/  \___/|_|    \____|\___/_/   \_\
 IoT Sensors Data Over OPCUA
 ______________________________________________________________________________O/__________
-	%s                                     O\           
+%s                                     O\           
 `
 	// Print Banner
 	fmt.Println(utils.Colorize(fmt.Sprintf(banner, version, website), utils.Cyan))
@@ -55,9 +55,10 @@ ______________________________________________________________________________O/
 	}
 
 	// Initiate a sensor simulator service
-	sensorSim := services.NewSensorSimService(configs.Hostname, configs.Port, USERIDs)
+	hn, _ := os.Hostname()
+	sensorSim := services.NewSensorSimService(hn, 46010, USERIDs)
 	nm := sensorSim.Srv.GetServer().NamespaceManager()
-	nsi := nm.Add("http://github.com/amine-amaach/simulators/sensorsOPCUA")
+	nsi := nm.Add("http://github.com/amine-amaach/simulators/ioTSensorsOPCUA")
 
 	// start server
 	go func() {

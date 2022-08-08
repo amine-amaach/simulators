@@ -34,7 +34,7 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity) *UaSr
 		// log
 		os.Exit(1)
 	}
-	nsu := "http://github.com/amine-amaach/simulators/sensorsOPCUA"
+	nsu := "http://github.com/amine-amaach/simulators/ioTSensorsOPCUA"
 	// add 'SimulatorsProject' object.
 	ioTSensors := server.NewObjectNode(
 		ua.NodeIDString{NamespaceIndex: srv.NamespaceManager().Add(nsu), ID: "IoTSensors"},
@@ -56,7 +56,7 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity) *UaSr
 }
 
 func createUaServer(host string, port int, userIds []ua.UserNameIdentity) (*server.Server, error) {
-	if err := ensurePKI(host); err != nil {
+	if err := ensurePKI(); err != nil {
 		log.Println(err)
 	}
 	// create the endpoint url from hostname and port
@@ -106,6 +106,7 @@ func createUaServer(host string, port int, userIds []ua.UserNameIdentity) (*serv
 		server.WithAnonymousIdentity(true),
 		server.WithSecurityPolicyNone(true),
 		server.WithInsecureSkipVerify(),
+		// server.WithTrace(),
 		server.WithServerDiagnostics(true),
 	)
 }
@@ -117,7 +118,7 @@ func encryptPasswords(userIds []ua.UserNameIdentity) {
 	}
 }
 
-func ensurePKI(host string) error {
+func ensurePKI() error {
 
 	// check if ../uaServerCerts/pki already exists
 	if _, err := os.Stat("./uaServerCerts/pki"); !os.IsNotExist(err) {
@@ -130,15 +131,15 @@ func ensurePKI(host string) error {
 	}
 
 	// create a server certificate
-	if err := createNewCertificate("IoTSensorsUaServer", host); err != nil {
+	if err := createNewCertificate("IoTSensorsUaServer"); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func createNewCertificate(appName, host string) error {
-
+func createNewCertificate(appName string) error {
+	host, _ := os.Hostname()
 	// create a key pair.
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {

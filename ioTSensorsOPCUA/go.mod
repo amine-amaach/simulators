@@ -1,8 +1,6 @@
-module github.com/amine-amaach/simulators/sensors
+module github.com/amine-amaach/simulators/ioTSensorsOPCUA
 
 go 1.19
-
-replace github.com/amine-amaach/simulators/sensors => ../sensors
 
 require (
 	github.com/awcullen/opcua v0.6.0-beta
