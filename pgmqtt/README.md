@@ -249,8 +249,7 @@ Project Link: [https://github.com/amine-amaach/simulators.git](https://github.co
   <img src="https://contrib.rocks/image?repo=amine-amaach/simulators" />
 </a>
 
-  > Contributions are always welcome!
-For major changes, please open an issue first to discuss what you would like to change.
+  > Every bit helps! If you come across any bugs, please send a bug report, or if you feel inclined to fix it yourself, submit a pull request.
 
 <br>
 
