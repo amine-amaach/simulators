@@ -22,7 +22,7 @@ func NewService(pGenerators []models.Generator, cfg *utils.Config, pgNumber int)
 
 // MakeMessagePayload generates random data for a given power-generator and
 // returns a map contains its topics with corresponding message payloads.
-func (svc *pgService) BuildPGMessagePayloads(sim *SimService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage {
+func (svc *pgService) BuildPGMessagePayloads(_ *SimService, pg *models.Generator, logger *zap.SugaredLogger) map[string]json.RawMessage {
 
 	type pgPayload struct {
 		Name     string
