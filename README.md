@@ -38,6 +38,8 @@
 
   * [pgmqtt](https://github.com/amine-amaach/simulators/tree/main/pgmqtt)
   
+  * [IoTSensorsMQTT](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsMQTT)
+
   * [IoTSensorsOPCUA](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsOPCUA)
 
 <!-- License -->

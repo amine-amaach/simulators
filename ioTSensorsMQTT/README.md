@@ -118,8 +118,6 @@
 
 ## 📎 Using the simulator
 
-<br>
-
 * Docker is the recommended way to use the simulator. 
 
   > A Docker image of the simulator is available : `docker pull amineamaach/sensors-mqtt`.
@@ -135,6 +133,7 @@
 ```sh
   docker compose up
 ```
+<br>
 
 <!-- Development -->
 ## 💻 Development

@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+###############################################################
+################# IoT Sensors Data Simulators #################
+###############################################################
+  ioTSensorsMQTT-Sim1:
+    image: amineamaach/sensors-mqtt:v1.0.0
+    restart: always
+    container_name: iot-sensors-sim1
+    volumes:
+    - ./configs/iot-sensors-sim1.json:/configs/config.json
+
+  ioTSensorsMQTT-Sim2:
+    image: amineamaach/sensors-mqtt:v1.0.0
+    restart: always
+    container_name: iot-sensors-sim2
+    volumes:
+    - ./configs/iot-sensors-sim2.json:/configs/config.json

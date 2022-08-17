@@ -1,0 +1,38 @@
+{
+    "MQTT_BROKER": {
+        "SERVER_URL":"mqtt://broker.hivemq.com:1883",
+        "SERVER_USER": "",
+        "SERVER_PWD": "",
+        "SERVER_RETAIN": "true",
+        "SERVER_QOS": 1,
+        "CLIENT_ID": "IoTSensorsMQTT-Simulator1",
+        "KEEP_ALIVE": 300, 
+        "RETRY_DELAY": 10,
+        "ROOT_TOPIC": "IoTSensorsMQTT/Simulator1",
+        "SET_DELAY_BETWEEN_MESSAGES" : 5,
+        "RANDOMIZE_DELAY_BETWEEN_MESSAGES" : "true"
+    },    
+    
+    "SIMULATORS": [
+        {
+            "Name" : "Temperature",
+            "Mean" : 50.0,
+            "StandardDeviation" : 3.5
+        },
+        {
+            "Name" : "Pressure",
+            "Mean" : 80.0,
+            "StandardDeviation" : 9.7
+        },
+        {
+            "Name" : "Humidity",
+            "Mean" : 40.0,
+            "StandardDeviation" : 2.1
+        },
+        {
+            "Name" : "Air Quality",
+            "Mean" : 15.0,
+            "StandardDeviation" : 5.3
+        }
+    ]
+}
