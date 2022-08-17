@@ -116,6 +116,26 @@
 
 <br>
 
+## 📎 Using the simulator
+
+<br>
+
+* Docker is the recommended way to use the simulator. 
+
+  > A Docker image of the simulator is available : `docker pull amineamaach/sensors-mqtt`.
+
+1. Clone this repository :
+
+```bash
+  git clone git@github.com:amine-amaach/simulators.git && cd examples/ioTSensorsMQTT/
+```
+
+2. Run 🏃
+
+```sh
+  docker compose up
+```
+
 <!-- Development -->
 ## 💻 Development
 
@@ -184,9 +204,10 @@ The application is configured using the following variables:
 
 <br>
 
-
 Amine Amaach - [LinkedIn](https://www.linkedin.com/in/amine-amaach/) - [Email](amine.amaach@um6p.ma)
-Website : amineamaach.me
+
+Website : [amineamaach.me](https://amineamaach.me/)
+
 Project Link : [https://github.com/amine-amaach/simulators.git](https://github.com/amine-amaach/simulators.git)
 
 <br>
