@@ -34,7 +34,6 @@ type simParams struct {
 
 var cfg *Config
 
-
 func GetConfig() *Config {
 
 	if cfg == nil {
@@ -68,21 +67,33 @@ func GetConfig() *Config {
 }
 
 func setDefault(v *viper.Viper) {
+	viper.SetDefault("SERVER_URL", "tcp://broker.hivemq.com:1883")
+	viper.SetDefault("SERVER_USER", "")
+	viper.SetDefault("SERVER_PWD", "")
+	viper.SetDefault("SERVER_QOS", 2)
+	viper.SetDefault("SERVER_RETAIN", "true")
+	viper.SetDefault("CLIENT_ID", "IoTSensorsMQTT-Simulator")
+	viper.SetDefault("KEEP_ALIVE", 300)
+	viper.SetDefault("RETRY_DELAY", 10)
+	viper.SetDefault("ROOT_TOPIC", "IoTSensorsMQTT")
+	viper.SetDefault("SET_DELAY_BETWEEN_MESSAGES", 5)
+	viper.SetDefault("RANDOMIZE_DELAY_BETWEEN_MESSAGES", "true")
+
 	v.SetDefault("SIMULATORS", []simParams{
 		{
 			Name:              "Temperature",
-			Mean:              20.0,
-			StandardDeviation: 5.0,
+			Mean:              20.5,
+			StandardDeviation: 5.1,
 		},
 		{
 			Name:              "Pressure",
-			Mean:              80.0,
-			StandardDeviation: 7.0,
+			Mean:              80.9,
+			StandardDeviation: 7.3,
 		},
 		{
 			Name:              "Air Quality",
-			Mean:              13.0,
-			StandardDeviation: 3.0,
+			Mean:              13.8,
+			StandardDeviation: 3.2,
 		},
 	})
 }
