@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type dataGenService struct {
+type SimulatorService struct {
 	// sensor data mean value
 	mean float64
 	// sensor data standard deviation value
@@ -17,9 +17,9 @@ type dataGenService struct {
 	value float64
 }
 
-func NewSensorService(mean, standardDeviation float64) *dataGenService {
+func NewSensorService(mean, standardDeviation float64) *SimulatorService {
 	rand.Seed(time.Now().UnixNano())
-	return &dataGenService{
+	return &SimulatorService{
 		mean:              mean,
 		standardDeviation: math.Abs(standardDeviation),
 		stepSizeFactor:    math.Abs(standardDeviation) / 10,
@@ -27,7 +27,7 @@ func NewSensorService(mean, standardDeviation float64) *dataGenService {
 	}
 }
 
-func (sensor *dataGenService) CalculateNextValue() float64 {
+func (sensor *SimulatorService) CalculateNextValue() float64 {
 	// first calculate how much the value will be changed
 	valueChange := rand.Float64() * sensor.stepSizeFactor
 	// second decide if the value is increased or decreased
@@ -37,7 +37,7 @@ func (sensor *dataGenService) CalculateNextValue() float64 {
 	return sensor.value
 }
 
-func (sensor dataGenService) decideFactor() float64 {
+func (sensor SimulatorService) decideFactor() float64 {
 	var (
 		continueDirection, changeDirection float64
 		distance                           float64 // the distance from the mean.

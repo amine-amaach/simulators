@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	MQTTBroker mqttBroker  `mapstructure:"MQTT_BROKER"`
-	SimParams  []simParams `mapstructure:"SIMULATORS"`
+	SimParams  []SimParams `mapstructure:"SIMULATORS"`
 }
 
 type mqttBroker struct {
@@ -22,11 +22,11 @@ type mqttBroker struct {
 	KeepAlive            uint16 `mapstructure:"KEEP_ALIVE"`
 	RetryDelay           uint16 `mapstructure:"RETRY_DELAY"`
 	RootTopic            string `mapstructure:"ROOT_TOPIC"`
-	DelayBetweenMessages uint16 `mapstructure:"SET_DELAY_BETWEEN_MESSAGES"`
+	DelayBetweenMessages int `mapstructure:"SET_DELAY_BETWEEN_MESSAGES"`
 	RandomizeDelay       bool   `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
 }
 
-type simParams struct {
+type SimParams struct {
 	Name              string  `mapstructure:"Name"`
 	Mean              float64 `mapstructure:"Mean"`
 	StandardDeviation float64 `mapstructure:"StandardDeviation"`
@@ -67,7 +67,7 @@ func GetConfig() *Config {
 }
 
 func setDefault(v *viper.Viper) {
-	viper.SetDefault("SERVER_URL", "tcp://broker.hivemq.com:1883")
+	viper.SetDefault("SERVER_URL", "mqtt://broker.hivemq.com:1883")
 	viper.SetDefault("SERVER_USER", "")
 	viper.SetDefault("SERVER_PWD", "")
 	viper.SetDefault("SERVER_QOS", 2)
@@ -79,7 +79,7 @@ func setDefault(v *viper.Viper) {
 	viper.SetDefault("SET_DELAY_BETWEEN_MESSAGES", 5)
 	viper.SetDefault("RANDOMIZE_DELAY_BETWEEN_MESSAGES", "true")
 
-	v.SetDefault("SIMULATORS", []simParams{
+	v.SetDefault("SIMULATORS", []SimParams{
 		{
 			Name:              "Temperature",
 			Mean:              20.5,
