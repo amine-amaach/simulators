@@ -4,7 +4,7 @@
         "SERVER_USER": "",
         "SERVER_PWD": "",
         "SERVER_RETAIN": "true",
-        "SERVER_QOS": 2,
+        "SERVER_QOS": 1,
         "CLIENT_ID": "IoTSensorsMQTT-Simulator",
         "KEEP_ALIVE": 300, 
         "RETRY_DELAY": 10,
@@ -33,6 +33,11 @@
             "Name" : "Air Quality",
             "Mean" : 15.0,
             "StandardDeviation" : 5.3
+        },
+        {
+            "Name" : "Calibration",
+            "Mean" : 40.2,
+            "StandardDeviation" : 0.1
         }
     ]
 }

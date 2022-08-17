@@ -45,11 +45,11 @@ func (MQTTService) Connect(ctx context.Context, logger *log.Logger, cfg *utils.C
 		ClientConfig: paho.ClientConfig{
 			ClientID: cfg.MQTTBroker.ClientID,
 			OnClientError: func(err error) {
-				logger.Printf(utils.Colorize(fmt.Sprintf("Server requested disconnect ✖️ %s\n", err), utils.Yellow))
+				logger.Printf(utils.Colorize(fmt.Sprintf("Server requested disconnect ✖️  %s\n", err), utils.Yellow))
 			},
 			OnServerDisconnect: func(d *paho.Disconnect) {
 				if d.Properties != nil {
-					logger.Printf(utils.Colorize(fmt.Sprintf("Server requested disconnect ✖️ %s\n", d.Properties.ReasonString), utils.Yellow))
+					logger.Printf(utils.Colorize(fmt.Sprintf("Server requested disconnect ✖️  %s\n", d.Properties.ReasonString), utils.Yellow))
 				} else {
 					logger.Printf(utils.Colorize(fmt.Sprintf("Server requested disconnect ✖️ reason code: %d\n", d.ReasonCode), utils.Yellow))
 				}

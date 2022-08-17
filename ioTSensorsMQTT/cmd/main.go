@@ -23,6 +23,21 @@ var (
 	wg      sync.WaitGroup
 )
 
+const (
+	version = "v1.0.0"
+	website = "www.amineamaach.me"
+	banner  = `
+	 ___    _____   ____                                  __  __  ___ _____ _____ 
+	|_ _|__|_   _| / ___|  ___ _ __  ___  ___  _ __ ___  |  \/  |/ _ \_   _|_   _|
+	 | |/ _ \| |   \___ \ / _ \ '_ \/ __|/ _ \| '__/ __| | |\/| | | | || |   | |  
+	 | | (_) | |    ___) |  __/ | | \__ \ (_) | |  \__ \ | |  | | |_| || |   | |  
+	|___\___/|_|   |____/ \___|_| |_|___/\___/|_|  |___/ |_|  |_|\__\_\|_|   |_| %s																																		   
+	IoT Sensor Data Over MQTT
+	_____________________________________________________________________O/_________
+	website : %s		       			     O\           
+	`
+)
+
 func init() {
 	cfg = utils.GetConfig()
 	logger = log.Default()
@@ -31,6 +46,8 @@ func init() {
 }
 
 func main() {
+	// Print Banner
+	fmt.Println(utils.Colorize(fmt.Sprintf(banner, version, website), utils.Green))
 
 	// Instantiate simulators
 	for _, sensor := range cfg.SimParams {
