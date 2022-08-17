@@ -75,9 +75,7 @@ func (MQTTService) Connect(ctx context.Context, logger *log.Logger, cfg *utils.C
 func (MQTTService) Publish(ctx context.Context, cm *autopaho.ConnectionManager, cfg *utils.Config, logger *log.Logger, payload float64, topic string) {
 	logger.Print(utils.Colorize(fmt.Sprintf("%s[%s] ⌛\n", "Sending Message Payload for : ", topic), utils.Blue))
 
-	msg, err := json.Marshal(struct {
-		Value float64
-	}{Value: payload})
+	msg, err := json.Marshal(payload)
 	if err != nil {
 		panic(err)
 	}
@@ -98,14 +96,5 @@ func (MQTTService) Publish(ctx context.Context, cm *autopaho.ConnectionManager, 
 		logger.Println(utils.Colorize(fmt.Sprintf("Reason code %d received ❌\n", pubResp.ReasonCode), utils.Red))
 	} else {
 		logger.Println(utils.Colorize(fmt.Sprintf("✅ %s[%s] : %.4f\n", "Message Payload Published to ", topic, payload), utils.Green))
-	}
-}
-
-func (MQTTService) Close(cancel context.CancelFunc, logger *log.Logger) {
-	if cancel != nil {
-		logger.Print(utils.Colorize("MQTT Connection Closed ✖️\n", utils.Blue))
-		cancel()
-	} else {
-		logger.Print(utils.Colorize("There is no MQTT Connection ✖️\n", utils.Blue))
 	}
 }
