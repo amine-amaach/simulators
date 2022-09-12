@@ -2,6 +2,7 @@ package model
 
 import (
 	sparkplug "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
+	"github.com/sirupsen/logrus"
 )
 
 type PropertySet struct {
@@ -12,20 +13,21 @@ func (propertySet *PropertySet) GetValues(protoPropertySet *sparkplug.Payload_Pr
 
 }
 
-func (propertySet *PropertySet) GetProperties() *sparkplug.Payload_PropertySet {
+func (propertySet *PropertySet) GetProperties(log *logrus.Logger) *sparkplug.Payload_PropertySet {
 	keys := make([]string, 0, len(propertySet.Map))
 	propertyValues := make([]*sparkplug.Payload_PropertyValue, 0, len(propertySet.Map))
 
 	for k, propertyValue := range propertySet.Map {
 		if propertyValue == nil || propertyValue.Value == nil || propertyValue.IsNull {
-			//TODO log
+			log.Warnln("Empty property value, 🔔 skipped..")
 			continue
 		}
-		protoPropertyValue := propertyValue.convertPropertyValue()
+		protoPropertyValue := propertyValue.convertPropertyValue(log)
 		if protoPropertyValue != nil {
-			//TODO log
 			propertyValues = append(propertyValues, protoPropertyValue)
 			keys = append(keys, k)
+		} else {
+			log.Warnln("Empty property value, 🔔 skipped..")
 		}
 	}
 

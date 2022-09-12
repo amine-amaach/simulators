@@ -5,13 +5,14 @@ import (
 	"time"
 
 	sparkplug "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
+	"github.com/sirupsen/logrus"
 )
 
 var (
 	ErrMetricIsNull        = errors.New("metric is Null")
 	ErrMetricValueIsNull   = errors.New("metric value is Null")
 	ErrUnsupportedDataType = errors.New("unsupported data type")
-	ErrDataTypeConflict = errors.New("data type conflict")
+	ErrDataTypeConflict    = errors.New("data type conflict")
 )
 
 type Metric struct {
@@ -39,7 +40,7 @@ func CreateMetric(
 	}
 }
 
-func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric) error {
+func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logrus.Logger) error {
 	// Return error if metric is null or value is null
 	if m.IsNull || m == nil {
 		return ErrMetricIsNull
@@ -88,7 +89,7 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric) error {
 
 	// Set Properties
 	if m.Properties != nil {
-		protoMetric.Properties = m.Properties.GetProperties()	
+		protoMetric.Properties = m.Properties.GetProperties(log)
 	}
 
 	return nil
