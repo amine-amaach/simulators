@@ -5,35 +5,29 @@ import (
 )
 
 type SparkplugBPayload struct {
-	Timestamp time.Time          `json:"timestamp,omitempty"`
+	Timestamp time.Time `json:"timestamp,omitempty"`
 	Metrics   []*Metric `json:"metrics,omitempty"`
-	Seq       uint64             `json:"seq,omitempty"`
-	Uuid      string             `json:"uuid,omitempty"`
-	Body      []byte             `json:"body,omitempty"`
+	Seq       uint64    `json:"seq,omitempty"`
+	Uuid      string    `json:"uuid,omitempty"`
+	Body      []byte    `json:"body,omitempty"`
 }
 
 func NewSparkplubBPayload(
-	timestamp time.Time, 
-	metrics []*Metric,
-	seq uint64, uuid string, 
-	body []byte,
-	) *SparkplugBPayload {
+	timestamp time.Time,
+) *SparkplugBPayload {
 	return &SparkplugBPayload{
 		Timestamp: timestamp,
-		Metrics: metrics,
-		Seq: seq,
-		Uuid: uuid,
-		Body: body,
 	}
 }
 
-// func (payload *SparkplugBPayload) addMetric(metric Metric) {
-// 	payload.Metrics[metric.Alias] = &metric
-// }
+func (payload *SparkplugBPayload) AddMetric(metric Metric) *SparkplugBPayload {
+	payload.Metrics = append(payload.Metrics, &metric)
+	return payload
+}
 
-// func (payload *SparkplugBPayload) addMetrics(metrics []Metric) {
-// 	for _, metric := range metrics {
-// 		payload.addMetric(metric)
-// 	}
-
-// }
+func (payload *SparkplugBPayload) AddMetrics(metrics []Metric) *SparkplugBPayload {
+	for _, metric := range metrics {
+		payload.AddMetric(metric)
+	}
+	return payload
+}

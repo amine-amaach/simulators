@@ -46,12 +46,24 @@ func (propertyValue *PropertyValue) getPropertyValue(protoMetric *sparkplug.Payl
 		}
 		protoMetric.Value = &sparkplug.Payload_PropertyValue_DoubleValue{DoubleValue: value}
 	case sparkplug.DataType_Int32:
+		value, ok := propertyValue.Value.(int32)
+		if !ok {
+			return ErrDataTypeConflict
+		}
+		protoMetric.Value = &sparkplug.Payload_PropertyValue_IntValue{IntValue: uint32(value)}
+	case sparkplug.DataType_Int64:
+		value, ok := propertyValue.Value.(int64)
+		if !ok {
+			return ErrDataTypeConflict
+		}
+		protoMetric.Value = &sparkplug.Payload_PropertyValue_LongValue{LongValue: uint64(value)}
+	case sparkplug.DataType_UInt32:
 		value, ok := propertyValue.Value.(uint32)
 		if !ok {
 			return ErrDataTypeConflict
 		}
 		protoMetric.Value = &sparkplug.Payload_PropertyValue_IntValue{IntValue: value}
-	case sparkplug.DataType_Int64:
+	case sparkplug.DataType_UInt64:
 		value, ok := propertyValue.Value.(uint64)
 		if !ok {
 			return ErrDataTypeConflict

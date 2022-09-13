@@ -28,7 +28,7 @@ type Metric struct {
 	Value        any                `json:"value,omitempty"`
 }
 
-func CreateMetric(
+func NewMetric(
 	name string,
 	dataType sparkplug.DataType,
 	value any,
@@ -41,6 +41,9 @@ func CreateMetric(
 }
 
 func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logrus.Logger) error {
+	log.WithFields(logrus.Fields{
+		"Metric_name": m.Name,
+	}).Debugln("Converting a new sparkplug metric .. 🔔")
 	// Return error if metric is null or value is null
 	if m.IsNull || m == nil {
 		return ErrMetricIsNull
@@ -51,7 +54,7 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 	}
 
 	// Set Value
-	if err := m.GetValue(protoMetric); err != nil {
+	if err := m.GetValue(protoMetric, log); err != nil {
 		return err
 	}
 
@@ -95,7 +98,11 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 	return nil
 }
 
-func (m *Metric) GetValue(protoMetric *sparkplug.Payload_Metric) error {
+func (m *Metric) GetValue(protoMetric *sparkplug.Payload_Metric, log *logrus.Logger) error {
+	log.WithFields(logrus.Fields{
+		"Metric_name":     m.Name,
+		"Metric_dataType": m.DataType,
+	}).Debugln("Parsing metric data type .. 🔔")
 	switch m.DataType {
 	case sparkplug.DataType_Boolean:
 		value, ok := m.Value.(bool)
@@ -116,12 +123,24 @@ func (m *Metric) GetValue(protoMetric *sparkplug.Payload_Metric) error {
 		}
 		protoMetric.Value = &sparkplug.Payload_Metric_DoubleValue{DoubleValue: value}
 	case sparkplug.DataType_Int32:
+		value, ok := m.Value.(int32)
+		if !ok {
+			return ErrDataTypeConflict
+		}
+		protoMetric.Value = &sparkplug.Payload_Metric_IntValue{IntValue: uint32(value)}
+	case sparkplug.DataType_Int64:
+		value, ok := m.Value.(int64)
+		if !ok {
+			return ErrDataTypeConflict
+		}
+		protoMetric.Value = &sparkplug.Payload_Metric_LongValue{LongValue: uint64(value)}
+	case sparkplug.DataType_UInt32:
 		value, ok := m.Value.(uint32)
 		if !ok {
 			return ErrDataTypeConflict
 		}
 		protoMetric.Value = &sparkplug.Payload_Metric_IntValue{IntValue: value}
-	case sparkplug.DataType_Int64:
+	case sparkplug.DataType_UInt64:
 		value, ok := m.Value.(uint64)
 		if !ok {
 			return ErrDataTypeConflict
