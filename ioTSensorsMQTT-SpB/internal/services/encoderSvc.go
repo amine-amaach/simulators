@@ -9,12 +9,28 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
-var ErrEncodingFailed = errors.New("failed to encode Sparkplug payload")
+var (
+	ErrEncodingFailed = errors.New("failed to encode Sparkplug payload")
+	ErrEmptyPayload   = errors.New("got empty sparkplug payload")
+)
 
-type SparkplugBEncoder struct{}
+type SparkplugBEncoder struct {
+	log *logrus.Logger
+}
 
-func (encoder *SparkplugBEncoder) GetBytes(payload model.SparkplugBPayload, log *logrus.Logger) ([]byte, error) {
-	log.Debugln("Encoding a new sparkplug B payload..")
+func NewSparkplugBEncoder(log *logrus.Logger) *SparkplugBEncoder {
+	return &SparkplugBEncoder{
+		log: log,
+	}
+}
+
+func (encoder *SparkplugBEncoder) GetBytes(payload *model.SparkplugBPayload) ([]byte, error) {
+	if payload == nil {
+		encoder.log.Errorln("Empty sparkplug payload ⛔")
+		return nil, ErrEmptyPayload
+	}
+
+	encoder.log.Debugln("Encoding a new sparkplug B payload.. 🔔")
 	protoMsg := sparkplug.Payload{}
 
 	// Set the timestamp
@@ -34,11 +50,11 @@ func (encoder *SparkplugBEncoder) GetBytes(payload model.SparkplugBPayload, log 
 	// Set the metrics
 	for _, metric := range payload.Metrics {
 		protoMetric := &sparkplug.Payload_Metric{}
-		if err := metric.ConvertMetric(protoMetric, log); err != nil {
-			log.WithFields(logrus.Fields{
+		if err := metric.ConvertMetric(protoMetric, encoder.log); err != nil {
+			encoder.log.WithFields(logrus.Fields{
 				"Metric Name": metric.Name,
-				"msg": err,
-			}).Errorln("Failed to convert Metric to sparkplug B model ⛔")
+				"ERROR Msg":         err,
+			}).Errorln("Failed to convert Metric to sparkplug B model, skipping.. ⛔")
 			continue
 		}
 		protoMsg.Metrics = append(protoMsg.Metrics, protoMetric)
@@ -50,13 +66,13 @@ func (encoder *SparkplugBEncoder) GetBytes(payload model.SparkplugBPayload, log 
 	// Write the new address book back to disk.
 	out, err := proto.Marshal(&protoMsg)
 	if err != nil {
-		log.WithFields(logrus.Fields{
+		encoder.log.WithFields(logrus.Fields{
 			"Seq": payload.Seq,
 			"msg": err,
 		}).Errorln("Failed to encode Sparkplug B payload ⛔")
 		return nil, ErrEncodingFailed
 	}
-	log.WithFields(logrus.Fields{
+	encoder.log.WithFields(logrus.Fields{
 		"Seq": payload.Seq,
 	}).Infoln("Encoding Sparkplug B payload : Successful ✅")
 	return out, nil
