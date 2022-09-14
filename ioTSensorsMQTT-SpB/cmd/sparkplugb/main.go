@@ -17,6 +17,7 @@ import (
 
 func main() {
 
+
 	//
 	// Each device with a unique context/ same for node
 	//
@@ -28,8 +29,9 @@ func main() {
 	logger1 := logrus.New()
 	logger1.SetLevel(logrus.TraceLevel)
 	mqttConfig := component.NewMQTTConfig()
-	mqttConfig.ConnectTimeout = "3s"
-	mqttConfig.KeepAlive = 5
+	mqttConfig.ConnectTimeout = "2s"
+	mqttConfig.KeepAlive = 2
+	mqttConfig.ConnectRetry = 2
 	mqttConfig.URL = "tcp://broker.hivemq.com:1883"
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,18 +68,18 @@ func main() {
 
 	node1.AddDevice(device1, logger)
 
-	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 2, 10, true)
-	sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 5, 9, true)
-	sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 1, 5, false)
+	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 10, 10, false)
+	// sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 5, 9, true)
+	// sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 1, 5, false)
 
-	device1.AddSimulator(sensor1, logger).
-		AddSimulator(sensor2, logger).
-		AddSimulator(sensor3, logger).
-		RunSimulators(logger)
+	device1.AddSimulator(sensor1, logger).RunSimulators(logger).RunPublisher(ctx, logger)
+	// AddSimulator(sensor2, logger).
+	// AddSimulator(sensor3, logger).
+	// RunSimulators(logger)
 
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
-	device1.RunPublisher(ctx, logger)
+	// device1.RunPublisher(ctx, logger)
 
 	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
@@ -134,9 +136,9 @@ func main() {
 	// 	}
 	// }()
 
-	time.Sleep(time.Duration(time.Second) * 10)
-	device1.ShutdownSimulator(sensor3.SensorId, logger)
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// time.Sleep(time.Duration(time.Second) * 10)
+	// device1.ShutdownSimulator(sensor3.SensorId, logger)
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	// time.Sleep(time.Duration(time.Second) * 3)
 	// device1.ShutdownSimulator(sensor2.SensorId, logger)
@@ -146,36 +148,36 @@ func main() {
 	time.Sleep(time.Duration(time.Second) * 10)
 	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 	node1.ShutdownDevice(ctx, device1.DeviceId, logger)
-	time.Sleep(time.Duration(time.Second) * 10)
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	time.Sleep(time.Duration(time.Second) * 5)
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
-	device1, err = services.NewDeviceInstance(
-		ctx,
-		"spBv1.0",
-		"groupeId",
-		"node01",
-		"device01",
-		logger,
-		mqttConfig,
-	)
+	// device1, err = services.NewDeviceInstance(
+	// 	ctx,
+	// 	"spBv1.0",
+	// 	"groupeId",
+	// 	"node01",
+	// 	"device01",
+	// 	logger,
+	// 	mqttConfig,
+	// )
 
-	if err != nil {
-		logger.Errorln("Couldn't instantiate device : ", device1.DeviceId)
-		return
-	}
+	// if err != nil {
+	// 	logger.Errorln("Couldn't instantiate device : ", device1.DeviceId)
+	// 	return
+	// }
 
-	node1.AddDevice(device1, logger)
+	// node1.AddDevice(device1, logger)
 
-	device1.AddSimulator(sensor1, logger).
-		AddSimulator(sensor2, logger).
-		AddSimulator(sensor3, logger).
-		RunSimulators(logger)
+	// device1.AddSimulator(sensor1, logger).
+	// 	AddSimulator(sensor2, logger).
+	// 	AddSimulator(sensor3, logger).
+	// 	RunSimulators(logger)
 
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
-	device1.RunPublisher(ctx, logger)
+	// device1.RunPublisher(ctx, logger)
 
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	// node1.ShutdownDevice(device1.DeviceId, logger)
 

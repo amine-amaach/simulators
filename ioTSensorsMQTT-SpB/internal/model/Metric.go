@@ -41,9 +41,6 @@ func NewMetric(
 }
 
 func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logrus.Logger) error {
-	log.WithFields(logrus.Fields{
-		"Metric_name": m.Name,
-	}).Debugln("Converting a new sparkplug metric .. 🔔")
 	// Return error if metric is null or value is null
 	if m.IsNull || m == nil {
 		return ErrMetricIsNull
@@ -58,6 +55,10 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 		return err
 	}
 
+	log.WithFields(logrus.Fields{
+		"Metric_name": m.Name,
+	}).Debugln("Converting a new sparkplug metric .. 🔔")
+
 	// Set data type
 	dataType := uint32(m.DataType.Number())
 	protoMetric.Datatype = &dataType
@@ -68,7 +69,9 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 	}
 
 	// Set Alias
-	protoMetric.Alias = &m.Alias
+	if m.Alias != 0 {
+		protoMetric.Alias = &m.Alias
+	}
 
 	// Set Timestamp
 	if !m.TimeStamp.IsZero() {
@@ -174,4 +177,9 @@ func (m *Metric) GetValue(protoMetric *sparkplug.Payload_Metric, log *logrus.Log
 		return ErrUnsupportedDataType
 	}
 	return nil
+}
+
+func (m *Metric) SetAlias(alias uint64) *Metric {
+	m.Alias = alias
+	return m
 }

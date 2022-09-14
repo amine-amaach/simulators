@@ -14,9 +14,11 @@ type SparkplugBPayload struct {
 
 func NewSparkplubBPayload(
 	timestamp time.Time,
+	seq uint64,
 ) *SparkplugBPayload {
 	return &SparkplugBPayload{
 		Timestamp: timestamp,
+		Seq: seq,
 	}
 }
 

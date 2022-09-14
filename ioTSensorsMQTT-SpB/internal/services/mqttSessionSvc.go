@@ -8,7 +8,6 @@ import (
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
-	mqtt "github.com/eclipse/paho.golang/paho"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/sirupsen/logrus"
 )
@@ -23,7 +22,11 @@ func NewMqttSessionSvc() *MqttSessionSvc {
 	return &MqttSessionSvc{}
 }
 
-func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context, willTopic string, payload []byte) error {
+func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
+	willTopic string,
+	payload []byte,
+	onConnectionUp func(cm *autopaho.ConnectionManager, c *paho.Connack),
+) error {
 	if m.MqttClient != nil {
 		m.Log.Warnln("MQTT session already exists 🔔")
 		return nil
@@ -60,9 +63,7 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context, willTopic str
 		KeepAlive:         uint16(m.MqttConfigs.KeepAlive),
 		ConnectRetryDelay: time.Duration(m.MqttConfigs.ConnectRetry) * time.Second,
 		ConnectTimeout:    connectTimeout,
-		OnConnectionUp: func(cm *autopaho.ConnectionManager, c *mqtt.Connack) {
-			m.Log.Infoln("MQTT connection up ✅")
-		},
+		OnConnectionUp: onConnectionUp,
 		OnConnectError: func(err error) {
 			m.Log.Errorf("Error whilst attempting connection %s ⛔\n", err)
 		},
@@ -74,7 +75,7 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context, willTopic str
 			OnClientError: func(err error) {
 				m.Log.Errorf("Server requested disconnect: %s ⛔\n", err)
 			},
-			OnServerDisconnect: func(d *mqtt.Disconnect) {
+			OnServerDisconnect: func(d *paho.Disconnect) {
 				if d.Properties != nil {
 					m.Log.Errorf("Server requested disconnect: %s ⛔\n", d.Properties.ReasonString)
 				} else {

@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/eclipse/paho.golang v0.10.0
+	github.com/matishsiao/goInfo v0.0.0-20210923090445-da2e3fa8d45f
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/sirupsen/logrus v1.9.0
 	google.golang.org/protobuf v1.28.1

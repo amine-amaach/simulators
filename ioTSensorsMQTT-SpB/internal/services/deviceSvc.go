@@ -2,13 +2,13 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/simulators"
+	sparkplug "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
 	"github.com/eclipse/paho.golang/autopaho"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/sirupsen/logrus"
@@ -20,8 +20,8 @@ type DeviceSvc struct {
 	NodeId    string
 	DeviceId  string
 	// Each device will have each own Seq and BdSeq
-	DeviceSeq   int64
-	DeviceBdSeq int64
+	DeviceSeq   uint64
+	DeviceBdSeq uint64
 	// Simulated sensors attached to this device
 	Simulators     map[string]*simulators.IoTSensorSim
 	SessionHandler *MqttSessionSvc
@@ -57,9 +57,8 @@ func NewDeviceInstance(
 	willTopic := namespace + "/" + groupeId + "/DDEATH/" + nodeId + "/" + deviceId
 
 	// Building up the Death Certificate MQTT Payload.
-	payload := model.NewSparkplubBPayload(time.Now()).
-		AddMetric(*model.NewMetric("bdSeq", 4, deviceInstance.GetNextDeviceSeqNum(log)))
-		//  sparkplug.DataType_Int64 == 4
+	payload := model.NewSparkplubBPayload(time.Now(), deviceInstance.GetNextDeviceSeqNum(log)).
+		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, deviceInstance.GetNextDeviceSeqNum(log)))
 
 	// Encoding the Death Certificate MQTT Payload.
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
@@ -68,7 +67,10 @@ func NewDeviceInstance(
 		return nil, err
 	}
 
-	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes)
+	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes,
+		func(cm *autopaho.ConnectionManager, c *paho.Connack) {
+			log.Infoln("MQTT connection up ✅")
+		})
 
 	if err != nil {
 		log.Errorln("Error establishing MQTT session ⛔")
@@ -162,7 +164,7 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 				// Adding this call stops publication whilst connection is unavailable.
 				err := d.SessionHandler.MqttClient.AwaitConnection(ctx)
 				if err != nil { // Should only happen when context is cancelled
-					log.Infof("Publisher done (AwaitConnection: %s), shuting down sensors..\n", err)
+					log.Infof("Publisher done (AwaitConnection: %s), Shutdown sensors..\n", err)
 					for _, sim := range d.Simulators {
 						sim.Shutdown <- true
 					}
@@ -177,7 +179,7 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 							"Device Id": d.DeviceId,
 							"Sensor Id": s.SensorId,
 						}).Warnln("Sensor is turning off ⛔")
-						// Release this goroutine when sensor is shutdown
+						// Release this goroutine when the sensor is turning off
 						return
 					}
 				}
@@ -205,10 +207,20 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 		return
 	}
 
-	// Encode msg here
-	msg, err := json.Marshal(data)
+	// Building up the DDATA Payload.
+	payload := model.NewSparkplubBPayload(time.Now(), d.GetNextDeviceSeqNum(log)).
+		AddMetric(*model.NewMetric(d.DeviceId+"/"+sensorId, 10, data))
+		//  sparkplug.DataType_Double == 10
+
+	// Encoding the Death Certificate MQTT Payload.
+	msg, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
-		panic(err)
+		log.WithFields(logrus.Fields{
+			"Device Id": d.DeviceId,
+			"Sensor Id": sensorId,
+			"Err":       err,
+		}).Errorln("Error encoding the sparkplug payload, not publishing.. ⛔")
+		return
 	}
 
 	// log.WithField("Sensor Data ", sensorData).Infoln("New data point from ", s.SensorId)
@@ -238,13 +250,13 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Device Id": d.DeviceId,
 				"Sensor Id": sensorId,
 				"Topic":     topic + "/" + sensorId,
-			}).Debugln("DDATA Published to the broker ✅")
+			}).Infoln("DDATA Published to the broker ✅")
 		}
 	}(ctx, cm, msg)
 }
 
-func (d *DeviceSvc) GetNextDeviceSeqNum(log *logrus.Logger) int64 {
-	retSeq := Seq
+func (d *DeviceSvc) GetNextDeviceSeqNum(log *logrus.Logger) uint64 {
+	retSeq := d.DeviceSeq
 	if d.DeviceSeq == 256 {
 		d.DeviceSeq = 0
 	} else {
@@ -253,9 +265,9 @@ func (d *DeviceSvc) GetNextDeviceSeqNum(log *logrus.Logger) int64 {
 	log.WithFields(
 		logrus.Fields{
 			"Device Id":  d.DeviceId,
-			"Device Seq": d.DeviceSeq,
+			"Device Seq": retSeq,
 		},
-	).Debugf("Next Device Seq : %d 🔔\n", Seq)
+	).Debugf("Next Device Seq : %d 🔔\n", d.DeviceSeq)
 	return retSeq
 }
 

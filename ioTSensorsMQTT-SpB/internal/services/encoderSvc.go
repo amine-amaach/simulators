@@ -74,6 +74,6 @@ func (encoder *SparkplugBEncoder) GetBytes(payload *model.SparkplugBPayload) ([]
 	}
 	encoder.log.WithFields(logrus.Fields{
 		"Seq": payload.Seq,
-	}).Infoln("Encoding Sparkplug B payload : Successful ✅")
+	}).Debugln("Encoding Sparkplug B payload : Successful ✅")
 	return out, nil
 }
