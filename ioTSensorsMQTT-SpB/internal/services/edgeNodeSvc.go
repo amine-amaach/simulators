@@ -1,7 +1,11 @@
 package services
 
 import (
+	"context"
+	"time"
+
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
+	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,23 +24,38 @@ type EdgeNodeSvc struct {
 }
 
 func NewEdgeNodeInstance(
+	ctx context.Context,
 	namespace, groupeId, nodeId string,
 	bdSeq int64,
 	log *logrus.Logger,
-	MqttConfigs *component.MQTTConfig,
-) *EdgeNodeSvc {
-	mqttSession := NewMqttSessionSvc(log, MqttConfigs)
-	willTopic := namespace + "/" + groupeId + "/NDEATH/" + nodeId
-	err := mqttSession.SetClientOptions(willTopic, bdSeq)
-	if err != nil {
-		log.Errorf("Failed to set the MQTT client options : %v ⛔\n", err)
-		return nil
+	mqttConfigs *component.MQTTConfig,
+) (*EdgeNodeSvc, error) {
+	log.Debugln("Setting up a new EoN Node instance 🔔")
+
+	mqttSession := &MqttSessionSvc{
+		Log:         log,
+		MqttConfigs: *mqttConfigs,
 	}
 
-	err = mqttSession.EstablishMqttSession()
+	willTopic := namespace + "/" + groupeId + "/NDEATH/" + nodeId
+
+	// Building up the Death Certificate MQTT Payload.
+	payload := model.NewSparkplubBPayload(time.Now()).
+		AddMetric(*model.NewMetric("bdSeq", 4, bdSeq))
+		//  sparkplug.DataType_Int64 == 4
+
+	// Encoding the Death Certificate MQTT Payload.
+	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
-		log.Errorf("%v ⛔\n", err)
-		return nil
+		log.Errorln("Error encoding the sparkplug payload ⛔")
+		return nil, err
+	}
+
+	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes)
+
+	if err != nil {
+		log.Errorln("Error establishing MQTT session ⛔")
+		return nil, err
 	}
 
 	return &EdgeNodeSvc{
@@ -45,38 +64,43 @@ func NewEdgeNodeInstance(
 		NodeId:         nodeId,
 		SessionHandler: mqttSession,
 		Devices:        make(map[string]*DeviceSvc),
-	}
+	}, err
 }
 
-func (e *EdgeNodeSvc) AddDevice(device *DeviceSvc, log *logrus.Logger) {
+func (e *EdgeNodeSvc) AddDevice(device *DeviceSvc, log *logrus.Logger) *EdgeNodeSvc {
 	if device != nil {
 		if device.DeviceId != "" {
 			if _, exists := e.Devices[device.DeviceId]; exists {
 				log.WithField("Device Id", device.DeviceId).Warnln("Device exists 🔔")
-				return
+				return e
 			}
 			e.Devices[device.DeviceId] = device
 			log.WithField("Device Id", device.DeviceId).Infoln("Device added successfully ✅")
-			return
+			return e
 		}
 		log.Errorln("Device id not set ⛔")
-		return
+		return e
 	}
-	log.Errorln("Device is empty ⛔")
-
+	log.Errorln("Device is not configured ⛔")
+	return e
 }
 
-func (e *EdgeNodeSvc) ShutdownDevice(deviceId string, log *logrus.Logger) {
+func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *logrus.Logger) *EdgeNodeSvc {
 	deviceToShutdown, exists := e.Devices[deviceId]
 	if !exists {
 		log.WithField("Device Id", deviceId).Warnln("Device not found 🔔")
-		return
+		return e
 	}
 	delete(e.Devices, deviceId)
-	deviceToShutdown.SessionHandler.Close()
-	// TODO : stop all future goroutines
+	log.WithField("Device Id", deviceId).Debugln("Shuting down all attached sensors.. 🔔")
+	for _, sim := range deviceToShutdown.Simulators {
+		sim.Shutdown <- true
+		*sim.IsAssigned = false
+	}
+	deviceToShutdown.SessionHandler.Close(ctx, deviceId)
 	deviceToShutdown = nil
 	log.WithField("Device Id", deviceId).Infoln("Device removed successfully ✅")
+	return e
 }
 
 // Used to get the sequence number

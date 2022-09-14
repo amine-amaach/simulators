@@ -1,10 +1,16 @@
 package services
 
 import (
-	"fmt"
+	"context"
+	"encoding/json"
+	"sync"
+	"time"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
+	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/simulators"
+	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,44 +25,64 @@ type DeviceSvc struct {
 	// Simulated sensors attached to this device
 	Simulators     map[string]*simulators.IoTSensorSim
 	SessionHandler *MqttSessionSvc
+	// Retain device's data in the broker
+	retain  bool
+	connMut sync.RWMutex
 }
 
 func NewDeviceInstance(
+	ctx context.Context,
 	namespace, groupeId, nodeId, deviceId string,
 	log *logrus.Logger,
-	MqttConfigs *component.MQTTConfig,
-) *DeviceSvc {
+	mqttConfigs *component.MQTTConfig,
+) (*DeviceSvc, error) {
 	log.Debugln("Setting up a new device instance 🔔")
-	deviceInstance := DeviceSvc{
+
+	deviceInstance := &DeviceSvc{
 		Namespace:   namespace,
 		GroupeId:    groupeId,
 		NodeId:      nodeId,
 		DeviceId:    deviceId,
 		DeviceSeq:   0,
 		DeviceBdSeq: 0,
+		retain:      false,
 		Simulators:  make(map[string]*simulators.IoTSensorSim),
 	}
-	mqttSession := NewMqttSessionSvc(log, MqttConfigs)
-	willTopic := namespace + "/" + groupeId + "/DDEATH/" + nodeId + "/" + deviceId
-	err := mqttSession.SetClientOptions(willTopic, deviceInstance.GetNextDeviceSeqNum(log))
-	if err != nil {
-		log.Errorf("Failed to set the MQTT client options : %v ⛔\n", err)
-		return nil
+
+	mqttSession := &MqttSessionSvc{
+		Log:         log,
+		MqttConfigs: *mqttConfigs,
 	}
 
-	err = mqttSession.EstablishMqttSession()
+	willTopic := namespace + "/" + groupeId + "/DDEATH/" + nodeId + "/" + deviceId
+
+	// Building up the Death Certificate MQTT Payload.
+	payload := model.NewSparkplubBPayload(time.Now()).
+		AddMetric(*model.NewMetric("bdSeq", 4, deviceInstance.GetNextDeviceSeqNum(log)))
+		//  sparkplug.DataType_Int64 == 4
+
+	// Encoding the Death Certificate MQTT Payload.
+	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
-		log.Errorf("%v ⛔\n", err)
-		return nil
+		log.Errorln("Error encoding the sparkplug payload ⛔")
+		return nil, err
 	}
+
+	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes)
+
+	if err != nil {
+		log.Errorln("Error establishing MQTT session ⛔")
+		return nil, err
+	}
+
 	deviceInstance.SessionHandler = mqttSession
-	return &deviceInstance
+	return deviceInstance, err
 }
 
-func (d *DeviceSvc) AddSimulator(sim *simulators.IoTSensorSim, log *logrus.Logger) {
+func (d *DeviceSvc) AddSimulator(sim *simulators.IoTSensorSim, log *logrus.Logger) *DeviceSvc {
 	if sim == nil {
 		log.Errorln("Sensor not defined ⛔")
-		return
+		return d
 	}
 
 	if *sim.IsAssigned {
@@ -64,31 +90,36 @@ func (d *DeviceSvc) AddSimulator(sim *simulators.IoTSensorSim, log *logrus.Logge
 			"Sensor Id": sim.SensorId,
 			"Device Id": d.DeviceId,
 		}).Warnln("Sensor not available 🔔")
-		return
+		return d
 	}
 
 	if sim.SensorId != "" {
 		log.WithField("Sensor Id", sim.SensorId).Debugln("Adding sensor.. 🔔")
+		if _, exists := d.Simulators[sim.SensorId]; exists {
+			log.WithField("Sensor Id", sim.SensorId).Infoln("Sensors exists.. 🔔")
+			return d
+		}
 		d.Simulators[sim.SensorId] = sim
 		*sim.IsAssigned = true
 		log.WithFields(logrus.Fields{
 			"Sensor Id": sim.SensorId,
 			"Device Id": d.DeviceId,
 		}).Infoln("Sensor added successfully ✅")
-		return
+		return d
 	} else {
-		log.Errorln("Sensor id is empty ⛔")
+		log.Errorln("Sensor id not defined ⛔")
 	}
+	return d
 }
 
-func (d *DeviceSvc) ShutdownSimulator(sensorId string, log *logrus.Logger) {
+func (d *DeviceSvc) ShutdownSimulator(sensorId string, log *logrus.Logger) *DeviceSvc {
 	sensorToShutdown, exists := d.Simulators[sensorId]
 	if !exists {
 		log.WithFields(logrus.Fields{
 			"Sensor Id": sensorId,
 			"Device Id": d.DeviceId,
 		}).Warnln("Sensor not found 🔔")
-		return
+		return d
 	}
 
 	log.WithFields(logrus.Fields{
@@ -106,40 +137,110 @@ func (d *DeviceSvc) ShutdownSimulator(sensorId string, log *logrus.Logger) {
 		"Sensor Id": sensorId,
 		"Device Id": d.DeviceId,
 	}).Infoln("Sensor removed successfully ✅")
+	return d
 }
 
-func (d *DeviceSvc) RunSimulators(log *logrus.Logger) {
+func (d *DeviceSvc) RunSimulators(log *logrus.Logger) *DeviceSvc {
 	for _, sim := range d.Simulators {
+		if sim.IsRunning {
+			log.WithFields(logrus.Fields{
+				"Device Id": d.DeviceId,
+				"Sensor Id": sim.SensorId,
+			}).Warnln("Sensor is already running 🔔")
+			continue
+		}
 		sim.Run(log)
 	}
+	return d
 }
 
-func (d *DeviceSvc) Publisher(log *logrus.Logger) {
-	topic := d.Namespace + "/" + d.GroupeId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
+func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *DeviceSvc {
 	for _, sim := range d.Simulators {
-		go func(s *simulators.IoTSensorSim) {
-			for sensorData := range s.SensorData {
-				// log.WithField("Sensor Data ", sensorData).Infoln("New data point from ", s.SensorId)
-				token := d.SessionHandler.MqttClient.Publish(topic+"/"+s.SensorId, 0, false, fmt.Sprint(sensorData))
-				token.Wait()
-				if err := token.Error(); err != nil {
-					log.WithFields(logrus.Fields{
-						"Device Id": d.DeviceId,
-						"Sensor Id": s.SensorId,
-						"Topic":     topic + "/" + s.SensorId,
-						"Err":       err,
-					}).Warnln("Couldn't publish DDATA to the broker")
-				} else {
-					log.WithFields(logrus.Fields{
-						"Device Id": d.DeviceId,
-						"Sensor Id": s.SensorId,
-						"Sensor Data": sensorData,
-						"Topic":     topic + "/" + s.SensorId,
-					}).Infoln("DDATA Published to the broker ✅")
+		go func(d *DeviceSvc, s *simulators.IoTSensorSim) {
+			for {
+				// AwaitConnection will return immediately if connection is up.
+				// Adding this call stops publication whilst connection is unavailable.
+				err := d.SessionHandler.MqttClient.AwaitConnection(ctx)
+				if err != nil { // Should only happen when context is cancelled
+					log.Infof("Publisher done (AwaitConnection: %s), shuting down sensors..\n", err)
+					for _, sim := range d.Simulators {
+						sim.Shutdown <- true
+					}
+					return
+				}
+				select {
+				case data := <-s.SensorData:
+					d.publishSensorData(ctx, s.SensorId, data, log)
+				case _, open := <-s.Shutdown:
+					if open {
+						log.WithFields(logrus.Fields{
+							"Device Id": d.DeviceId,
+							"Sensor Id": s.SensorId,
+						}).Warnln("Sensor is turning off ⛔")
+						// Release this goroutine when sensor is shutdown
+						return
+					}
 				}
 			}
-		}(sim)
+		}(d, sim)
 	}
+	return d
+}
+
+// Only a device instance that is permitted to run a simulator
+func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data float64, log *logrus.Logger) {
+	topic := d.Namespace + "/" + d.GroupeId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
+
+	d.connMut.RLock()
+	cm := d.SessionHandler.MqttClient
+	d.connMut.RUnlock()
+
+	if cm == nil {
+		log.WithFields(logrus.Fields{
+			"Device Id": d.DeviceId,
+		}).Warnln("MQTT connection is down ⛔")
+
+		// TODO :: Store data to be sent later
+
+		return
+	}
+
+	// Encode msg here
+	msg, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	// log.WithField("Sensor Data ", sensorData).Infoln("New data point from ", s.SensorId)
+
+	// Publish will block so we run it in a goRoutine
+	go func(ctx context.Context, cm *autopaho.ConnectionManager, msg []byte) {
+		pr, err := cm.Publish(ctx, &paho.Publish{
+			QoS:     d.SessionHandler.MqttConfigs.QoS,
+			Topic:   topic + "/" + sensorId,
+			Payload: msg,
+		})
+		if err != nil {
+			// store data to be sent later
+			log.WithFields(logrus.Fields{
+				"Device Id": d.DeviceId,
+				"Sensor Id": sensorId,
+				"Topic":     topic + "/" + sensorId,
+			}).Errorln("Couldn't publish DDATA to the broker, retrying again.. ⛔")
+		} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 { // 16 = Server received message but there are no subscribers
+			log.WithFields(logrus.Fields{
+				"Device Id": d.DeviceId,
+				"Sensor Id": sensorId,
+				"Topic":     topic + "/" + sensorId,
+			}).Errorln("reason code %d received ⛔\n", pr.ReasonCode)
+		} else {
+			log.WithFields(logrus.Fields{
+				"Device Id": d.DeviceId,
+				"Sensor Id": sensorId,
+				"Topic":     topic + "/" + sensorId,
+			}).Debugln("DDATA Published to the broker ✅")
+		}
+	}(ctx, cm, msg)
 }
 
 func (d *DeviceSvc) GetNextDeviceSeqNum(log *logrus.Logger) int64 {

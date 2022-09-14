@@ -1,64 +1,35 @@
 package services
 
 import (
-	"errors"
+	"context"
+	"net/url"
 	"time"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
-	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/paho"
+	mqtt "github.com/eclipse/paho.golang/paho"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/sirupsen/logrus"
 )
 
-var ErrEmptyClientOptions = errors.New("got empty MQTT client options")
-
 type MqttSessionSvc struct {
-	Log               *logrus.Logger
-	MqttConfigs       *component.MQTTConfig
-	MqttClientOptions *mqtt.ClientOptions
-	MqttClient        mqtt.Client
+	Log         *logrus.Logger
+	MqttConfigs component.MQTTConfig
+	MqttClient  *autopaho.ConnectionManager
 }
 
-func NewMqttSessionSvc(log *logrus.Logger, MqttConfigs *component.MQTTConfig) *MqttSessionSvc {
-	return &MqttSessionSvc{
-		MqttConfigs: MqttConfigs,
-		Log:         log,
-	}
+func NewMqttSessionSvc() *MqttSessionSvc {
+	return &MqttSessionSvc{}
 }
 
-func (m *MqttSessionSvc) EstablishMqttSession() error {
+func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context, willTopic string, payload []byte) error {
 	if m.MqttClient != nil {
 		m.Log.Warnln("MQTT session already exists 🔔")
 		return nil
 	}
 
-	if m.MqttClientOptions == nil {
-		m.Log.Errorln("Empty MQTT client options ⛔")
-		return ErrEmptyClientOptions
-	}
-
-	// Create new Mqtt client
-	client := mqtt.NewClient(m.MqttClientOptions)
-
-	tok := client.Connect()
-	m.Log.Infof("Trying to establish an MQTT Session to %v 🔔\n", m.MqttConfigs.URLs)
-	tok.Wait()
-	if err := tok.Error(); err != nil {
-		m.Log.Errorln("Error Establishing an MQTT Session ⛔")
-		return err
-	}
-	m.Log.Infoln("MQTT Session Established ✅")
-	m.MqttClient = client
-	return nil
-}
-
-func (m *MqttSessionSvc) SetClientOptions(willTopic string, bdSeq int64) error {
 	m.Log.Debugln("Setting up an MQTT client options 🔔")
-	if m.MqttConfigs == nil {
-		m.Log.Errorln("Empty MQTT client options ⛔")
-		return ErrEmptyClientOptions
-	}
 
 	connectTimeout, err := time.ParseDuration(m.MqttConfigs.ConnectTimeout)
 	if err != nil {
@@ -66,62 +37,76 @@ func (m *MqttSessionSvc) SetClientOptions(willTopic string, bdSeq int64) error {
 		return err
 	}
 
-	// Setup the MQTT connection parameters
-	config := mqtt.NewClientOptions().
-		SetAutoReconnect(true).
-		SetCleanSession(m.MqttConfigs.CleanSession).
-		SetConnectTimeout(connectTimeout).
-		SetKeepAlive(time.Duration(m.MqttConfigs.KeepAlive))
+	srvURL, err := url.Parse(m.MqttConfigs.URL)
+	if err != nil {
+		m.Log.Errorf("Unable to parse server URL [%s] : %w ⛔", srvURL, err)
+		return err
+	}
 
+	var cliId string
 	if m.MqttConfigs.ClientID != "" {
-		config.SetClientID(m.MqttConfigs.ClientID)
+		cliId = m.MqttConfigs.ClientID
 	} else {
-		autoClientId, err := nanoid.New()
+		cliId, err = nanoid.New()
 		if err != nil {
 			m.Log.Errorln("Unable to auto-generate client id ⛔")
 			return err
 		}
-		config.SetClientID(autoClientId)
+		cliId = "IoTSensorsMQTT-SpB::" + cliId
 	}
 
-	// Set MQTT servers urls
-	for _, u := range m.MqttConfigs.URLs {
-		config = config.AddBroker(u)
+	cliCfg := autopaho.ClientConfig{
+		BrokerUrls:        []*url.URL{srvURL},
+		KeepAlive:         uint16(m.MqttConfigs.KeepAlive),
+		ConnectRetryDelay: time.Duration(m.MqttConfigs.ConnectRetry) * time.Second,
+		ConnectTimeout:    connectTimeout,
+		OnConnectionUp: func(cm *autopaho.ConnectionManager, c *mqtt.Connack) {
+			m.Log.Infoln("MQTT connection up ✅")
+		},
+		OnConnectError: func(err error) {
+			m.Log.Errorf("Error whilst attempting connection %s ⛔\n", err)
+		},
+		Debug: m.Log,
+		// TODO : TlsConfig
+		ClientConfig: paho.ClientConfig{
+			ClientID: cliId,
+
+			OnClientError: func(err error) {
+				m.Log.Errorf("Server requested disconnect: %s ⛔\n", err)
+			},
+			OnServerDisconnect: func(d *mqtt.Disconnect) {
+				if d.Properties != nil {
+					m.Log.Errorf("Server requested disconnect: %s ⛔\n", d.Properties.ReasonString)
+				} else {
+					m.Log.Errorf("Server requested disconnect; reason code : %d ⛔\n", d.ReasonCode)
+				}
+			},
+		},
 	}
 
 	if m.MqttConfigs.User != "" {
-		config.SetUsername(m.MqttConfigs.User)
-	}
-
-	if m.MqttConfigs.Password != "" {
-		config.SetPassword(m.MqttConfigs.Password)
-	}
-
-	// TODO: set TLS
-	// if m.MqttConfigs.TLS.Enabled {}
-
-	// Building up the Death Certificate MQTT Payload.
-	payload := model.NewSparkplubBPayload(time.Now()).
-		AddMetric(*model.NewMetric("bdSeq", 4, bdSeq))
-		//  sparkplug.DataType_Int64 == 4
-
-	// Encoding the Death Certificate MQTT Payload.
-	bytes, err := NewSparkplugBEncoder(m.Log).GetBytes(payload)
-	if err != nil {
-		return err
+		cliCfg.SetUsernamePassword(m.MqttConfigs.User, []byte(m.MqttConfigs.Password))
 	}
 
 	// Setup the Death Certificate Topic/Payload into the MQTT session
-	config.SetBinaryWill(willTopic, bytes, 0, false)
+	cliCfg.SetWillMessage(willTopic, payload, 0, false)
 
-	m.MqttClientOptions = config
+	// Connect to the broker - this will return immediately after initiating the connection process
+	m.Log.Infof("Trying to establish an MQTT Session to %v 🔔\n", cliCfg.BrokerUrls)
+	cm, err := autopaho.NewConnection(ctx, cliCfg)
+	if err != nil {
+		panic(err)
+	}
+
+	m.MqttClient = cm
 	return nil
 }
 
-func (m *MqttSessionSvc) Close()  {
-	m.Log.WithField("ClientId", m.MqttConfigs.ClientID).Debugln("Closing MQTT connection.. 🔔")
+func (m *MqttSessionSvc) Close(ctx context.Context, id string) {
+	m.Log.WithField("ClientId", id).Debugln("Closing MQTT connection.. 🔔")
 	if m.MqttClient != nil {
-		m.MqttClient.Disconnect(0)
-		m.MqttClient = nil
+		if err := m.MqttClient.Disconnect(ctx); err == nil {
+			m.Log.WithField("ClientId", id).Infoln("MQTT connection closed ✅")
+		}
 	}
 }

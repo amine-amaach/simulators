@@ -31,10 +31,10 @@ type IoTSensorSim struct {
 	Shutdown chan bool
 
 	// Check if it's running
-	isRunning bool
+	IsRunning bool
 
 	// Check if it's already assigned to a device,
-	// only allowed to be be assigned to one device
+	// it's only allowed to be be assigned to one device
 	IsAssigned *bool
 }
 
@@ -53,15 +53,15 @@ func NewIoTSensorSim(
 		mean:              mean,
 		standardDeviation: math.Abs(standardDeviation),
 		currentValue:      mean - rand.Float64(),
-		isRunning:         false,
+		IsRunning:         false,
 		IsAssigned:        &isAssigned,
 		SensorData:        make(chan float64),
 		// Add a buffered channel with capacity 1
 		// to send a shutdown signal from the device.
-		Shutdown:          make(chan bool, 1),
-		delayMin:          delayMin,
-		delayMax:          delayMax,
-		randomize:         randomize,
+		Shutdown:  make(chan bool, 1),
+		delayMin:  delayMin,
+		delayMax:  delayMax,
+		randomize: randomize,
 	}
 }
 
@@ -116,12 +116,12 @@ func (s *IoTSensorSim) UpdateSensorParams(
 }
 
 func (s *IoTSensorSim) Run(log *logrus.Logger) {
-	if s.isRunning {
+	if s.IsRunning {
 		log.WithField("Senor Id", s.SensorId).Debugln("Already running 🔔")
 		return
 	}
 
-	s.isRunning = true
+	s.IsRunning = true
 	if s.delayMin <= 0 {
 		s.delayMin = 1
 	}
@@ -132,15 +132,19 @@ func (s *IoTSensorSim) Run(log *logrus.Logger) {
 		s.SensorData <- s.calculateNextValue()
 		for {
 			select {
-			case <-s.Shutdown:
+			case _, open := <-s.Shutdown:
 				log.WithField("Senor Id", s.SensorId).Debugln("Got shutdown signal 🔔")
-				s.isRunning = false
+				s.IsRunning = false
+				if open {
+					// Send signal to publisher to shutdown
+					s.Shutdown <- true
+				}
 				return
 			case <-time.After(time.Duration(delay) * time.Second):
 				if s.randomize {
-					// log.WithField("Previous Delay :", delay).Warnln("🔔🔔🔔🔔🔔🔔")
+					// log.WithField("Previous Delay :", delay).Warnln("🔔🔔")
 					delay = rand.Intn(s.delayMax-s.delayMin) + s.delayMin
-					// log.WithField("Next Delay :", delay).Infoln("🔔🔔🔔🔔🔔🔔")
+					// log.WithField("Next Delay :", delay).Infoln("🔔🔔")
 				}
 				s.SensorData <- s.calculateNextValue()
 			}

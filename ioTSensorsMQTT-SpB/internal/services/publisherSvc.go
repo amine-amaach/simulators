@@ -3,19 +3,20 @@ package services
 import (
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
 	// "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqtt "github.com/eclipse/paho.golang/paho"
 )
+
 type Publisher struct {
-	Topic string
+	Topic           string
 	OutboundPayload model.SparkplugBPayload
-	MqttClient mqtt.Client
+	MqttClient      mqtt.Client
 }
 
 func NewPublisher(topic string, outboundPayload model.SparkplugBPayload, mqttClient mqtt.Client) *Publisher {
 	return &Publisher{
-		Topic: topic,
+		Topic:           topic,
 		OutboundPayload: outboundPayload,
-		MqttClient: mqttClient,
+		MqttClient:      mqttClient,
 	}
 }
 
