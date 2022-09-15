@@ -19,11 +19,11 @@ type IoTSensorSim struct {
 	currentValue float64
 
 	// Delay between each data point
-	delayMin int
-	delayMax int
+	DelayMin uint32
+	DelayMax uint32
 	// Randomize delay between data points if true,
-	// otherwise delayMin will be set as fixed delay
-	randomize bool
+	// otherwise DelayMin will be set as fixed delay
+	Randomize bool
 
 	// Channel to send data to device
 	SensorData chan float64
@@ -33,21 +33,37 @@ type IoTSensorSim struct {
 	// Check if it's running
 	IsRunning bool
 
+	// Sensor Alias, to be used in DDATA, instead of name
+	Alias uint64
+
 	// Check if it's already assigned to a device,
 	// it's only allowed to be be assigned to one device
 	IsAssigned *bool
+
+	// Used to Update sensor parameters at runtime
+	Update chan UpdateSensorParams
+}
+
+type UpdateSensorParams struct {
+	// Delay between each data point
+	DelayMin uint32
+	DelayMax uint32
+	// Randomize delay between data points if true,
+	// otherwise DelayMin will be set as fixed delay
+	Randomize bool
 }
 
 func NewIoTSensorSim(
 	id string,
 	mean,
 	standardDeviation float64,
-	delayMin int,
-	delayMax int,
-	randomize bool,
+	DelayMin uint32,
+	DelayMax uint32,
+	Randomize bool,
 ) *IoTSensorSim {
 	rand.Seed(time.Now().UnixNano())
 	isAssigned := false
+	alias := 100 + uint64(rand.Int63n(10000))
 	return &IoTSensorSim{
 		SensorId:          id,
 		mean:              mean,
@@ -59,9 +75,11 @@ func NewIoTSensorSim(
 		// Add a buffered channel with capacity 1
 		// to send a shutdown signal from the device.
 		Shutdown:  make(chan bool, 1),
-		delayMin:  delayMin,
-		delayMax:  delayMax,
-		randomize: randomize,
+		DelayMin:  DelayMin,
+		DelayMax:  DelayMax,
+		Randomize: Randomize,
+		Alias:     alias,
+		Update:    make(chan UpdateSensorParams, 1),
 	}
 }
 
@@ -106,15 +124,6 @@ func (s *IoTSensorSim) decideFactor() float64 {
 	return changeDirection
 }
 
-func (s *IoTSensorSim) UpdateSensorParams(
-	mean float64,
-	standardDeviation float64,
-) {
-	s.mean = mean
-	s.currentValue = mean - rand.Float64()
-	s.standardDeviation = math.Abs(standardDeviation)
-}
-
 func (s *IoTSensorSim) Run(log *logrus.Logger) {
 	if s.IsRunning {
 		log.WithField("Senor Id", s.SensorId).Debugln("Already running 🔔")
@@ -122,12 +131,14 @@ func (s *IoTSensorSim) Run(log *logrus.Logger) {
 	}
 
 	s.IsRunning = true
-	if s.delayMin <= 0 {
-		s.delayMin = 1
+	if s.DelayMin <= 0 {
+		s.DelayMin = 1
+	} else if s.DelayMin > s.DelayMax && s.Randomize {
+		s.DelayMax = s.DelayMin
 	}
 
 	go func() {
-		delay := s.delayMin
+		delay := s.DelayMin
 		log.WithField("Senor Id", s.SensorId).Debugln("Started running 🔔")
 		s.SensorData <- s.calculateNextValue()
 		for {
@@ -141,12 +152,32 @@ func (s *IoTSensorSim) Run(log *logrus.Logger) {
 				}
 				return
 			case <-time.After(time.Duration(delay) * time.Second):
-				if s.randomize {
+				if s.Randomize {
 					// log.WithField("Previous Delay :", delay).Warnln("🔔🔔")
-					delay = rand.Intn(s.delayMax-s.delayMin) + s.delayMin
+					delay = uint32(rand.Intn(int(s.DelayMax-s.DelayMin))) + s.DelayMin
 					// log.WithField("Next Delay :", delay).Infoln("🔔🔔")
 				}
 				s.SensorData <- s.calculateNextValue()
+			case newParams := <-s.Update:
+				if newParams.DelayMin > 0 && !(newParams.DelayMin > newParams.DelayMax && newParams.Randomize) {
+					s.DelayMax = newParams.DelayMax
+					s.DelayMin = newParams.DelayMin
+					s.Randomize = newParams.Randomize
+					delay = newParams.DelayMin
+					log.WithFields(logrus.Fields{
+						"Senor Id":  s.SensorId,
+						"Min delay": newParams.DelayMin,
+						"Max delay": newParams.DelayMax,
+						"Randomize": newParams.Randomize,
+					}).Debugln("Got updated parameters, sensor updated 🔔")
+				} else {
+					log.WithFields(logrus.Fields{
+						"Senor Id":  s.SensorId,
+						"Min delay": newParams.DelayMin,
+						"Max delay": newParams.DelayMax,
+						"Randomize": newParams.Randomize,
+					}).Debugln("Wrong parameters, not updating sensor 🔔")
+				}
 			}
 		}
 	}()

@@ -17,8 +17,7 @@ import (
 
 func main() {
 
-
-	//
+	// TODO ::
 	// Each device with a unique context/ same for node
 	//
 
@@ -29,9 +28,10 @@ func main() {
 	logger1 := logrus.New()
 	logger1.SetLevel(logrus.TraceLevel)
 	mqttConfig := component.NewMQTTConfig()
-	mqttConfig.ConnectTimeout = "2s"
-	mqttConfig.KeepAlive = 2
-	mqttConfig.ConnectRetry = 2
+	mqttConfig.ConnectTimeout = "5s"
+	mqttConfig.KeepAlive = 10
+	mqttConfig.QoS = 1
+	mqttConfig.ConnectRetry = 3
 	mqttConfig.URL = "tcp://broker.hivemq.com:1883"
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,15 +66,18 @@ func main() {
 		return
 	}
 
-	node1.AddDevice(device1, logger)
+	time.Sleep(time.Duration(time.Second) * 3)
 
-	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 10, 10, false)
+	node1.AddDevice(ctx, device1, logger)
+
+	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 5, 10, false)
 	// sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 5, 9, true)
-	// sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 1, 5, false)
+	// sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 5, 5, false)
 
-	device1.AddSimulator(sensor1, logger).RunSimulators(logger).RunPublisher(ctx, logger)
-	// AddSimulator(sensor2, logger).
-	// AddSimulator(sensor3, logger).
+	device1.AddSimulator(ctx, sensor1, logger).
+		// AddSimulator(ctx, sensor2, logger).
+		// AddSimulator(ctx, sensor3, logger).
+		RunSimulators(logger).RunPublisher(ctx, logger)
 	// RunSimulators(logger)
 
 	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
@@ -137,7 +140,10 @@ func main() {
 	// }()
 
 	// time.Sleep(time.Duration(time.Second) * 10)
-	// device1.ShutdownSimulator(sensor3.SensorId, logger)
+	// device1.ShutdownSimulator(ctx, sensor3.SensorId, logger).
+	// 	ShutdownSimulator(ctx, sensor2.SensorId, logger).
+	// 	ShutdownSimulator(ctx, sensor1.SensorId, logger)
+
 	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	// time.Sleep(time.Duration(time.Second) * 3)
@@ -145,11 +151,16 @@ func main() {
 	// time.Sleep(time.Duration(time.Second) * 3)
 	// device1.ShutdownSimulator(sensor1.SensorId, logger)
 
-	time.Sleep(time.Duration(time.Second) * 10)
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
-	node1.ShutdownDevice(ctx, device1.DeviceId, logger)
 	time.Sleep(time.Duration(time.Second) * 5)
-	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// node1.ShutdownDevice(ctx, device1.DeviceId, logger)
+	sensor1.Update <- simulators.UpdateSensorParams{
+		DelayMin: 1,
+		DelayMax: 1,
+		Randomize: false,
+	}
+	time.Sleep(time.Duration(time.Second) * 15)
+	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	// device1, err = services.NewDeviceInstance(
 	// 	ctx,

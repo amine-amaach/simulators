@@ -31,12 +31,14 @@ type Metric struct {
 func NewMetric(
 	name string,
 	dataType sparkplug.DataType,
+	alias uint64,
 	value any,
 ) *Metric {
 	return &Metric{
 		Name:     name,
 		DataType: dataType,
 		Value:    value,
+		Alias: alias,
 	}
 }
 
@@ -75,6 +77,10 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 
 	// Set Timestamp
 	if !m.TimeStamp.IsZero() {
+		time := uint64(m.TimeStamp.UnixMilli())
+		protoMetric.Timestamp = &time
+	} else {
+		m.TimeStamp = time.Now()
 		time := uint64(m.TimeStamp.UnixMilli())
 		protoMetric.Timestamp = &time
 	}

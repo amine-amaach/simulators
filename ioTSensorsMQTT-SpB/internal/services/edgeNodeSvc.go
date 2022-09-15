@@ -15,9 +15,13 @@ import (
 
 var (
 	// EoD Node Seq and BdSeq
-	Seq       uint64 = 0
-	BdSeq     uint64 = 0
-	StartTime time.Time
+	Seq        uint64 = 0
+	BdSeq      uint64 = 0
+	StartTime  time.Time
+	AppVersion string = "v1.0.0"
+	Maintainer string = "Amine Amaach"
+	Website    string = "amineamaach.me"
+	SourceCode string = "https://github.com/amineamaach/simulators"
 )
 
 type EdgeNodeSvc struct {
@@ -54,18 +58,24 @@ func NewEdgeNodeInstance(
 
 	// Building up the Death Certificate MQTT Payload.
 	payload := model.NewSparkplubBPayload(time.Now(), GetNextSeqNum(log)).
-		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, bdSeq))
+		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, bdSeq))
 
 	// Encoding the Death Certificate MQTT Payload.
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
-		log.Errorln("Error encoding the sparkplug payload ⛔")
+		log.WithFields(logrus.Fields{
+			"Groupe ID": eonNode.GroupeId,
+			"Node ID":   eonNode.NodeId,
+		}).Errorln("Error encoding the sparkplug payload ⛔")
 		return nil, err
 	}
 
 	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes,
 		func(cm *autopaho.ConnectionManager, c *paho.Connack) {
-			log.Infoln("MQTT connection up ✅")
+			log.WithFields(logrus.Fields{
+				"Groupe Id": eonNode.GroupeId,
+				"Node Id":   eonNode.NodeId,
+			}).Infoln("MQTT connection up ✅")
 			eonNode.PublishBirth(ctx, log)
 			log.WithFields(logrus.Fields{
 				"Groupe Id": eonNode.GroupeId,
@@ -74,7 +84,10 @@ func NewEdgeNodeInstance(
 		})
 
 	if err != nil {
-		log.Errorln("Error establishing MQTT session ⛔")
+		log.WithFields(logrus.Fields{
+			"Groupe ID": eonNode.GroupeId,
+			"Node ID":   eonNode.NodeId,
+		}).Errorln("Error establishing MQTT session ⛔")
 		return nil, err
 	}
 
@@ -84,28 +97,47 @@ func NewEdgeNodeInstance(
 
 // PublishBirth used to publish the EoN node NBIRTH certificate to the broker.
 func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *EdgeNodeSvc {
+	// The first MQTT message that an EoN node MUST publish upon the successful establishment
+	// of an MQTT Session is an EoN BIRTH Certificate.
 	props, _ := goInfo.GetInfo()
 	upTime := int64(time.Since(StartTime) / 1e+6)
 	// Create the EoN Node BIRTH payload
 	payload := model.NewSparkplubBPayload(time.Now(), GetNextSeqNum(log)).
-		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, BdSeq)).
-		AddMetric(*model.NewMetric("Up Time ms", sparkplug.DataType_Int64, upTime).SetAlias(2)).
-		AddMetric(*model.NewMetric("Node Control/Rebirth", sparkplug.DataType_Boolean, false).SetAlias(3)).
-		AddMetric(*model.NewMetric("Node Control/Reboot", sparkplug.DataType_Boolean, false).SetAlias(4)).
-		AddMetric(*model.NewMetric("Node Control/Shutdown", sparkplug.DataType_Boolean, false).SetAlias(5)).
-		AddMetric(*model.NewMetric("Properties/OS", sparkplug.DataType_String, props.OS).SetAlias(6)).
-		AddMetric(*model.NewMetric("Properties/Kernel", sparkplug.DataType_String, props.Kernel).SetAlias(7)).
-		AddMetric(*model.NewMetric("Properties/Core", sparkplug.DataType_String, props.Core).SetAlias(8)).
-		AddMetric(*model.NewMetric("Properties/CPUs", sparkplug.DataType_Int32, int32(props.CPUs)).SetAlias(9)).
-		AddMetric(*model.NewMetric("Properties/Platform", sparkplug.DataType_String, props.Platform).SetAlias(10)).
-		AddMetric(*model.NewMetric("Properties/Hostname", sparkplug.DataType_String, props.Hostname).SetAlias(11))
+		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, BdSeq)).
+		AddMetric(*model.NewMetric("Maintainer", sparkplug.DataType_String, 2, Maintainer)).
+		AddMetric(*model.NewMetric("Website", sparkplug.DataType_String, 3, Website)).
+		AddMetric(*model.NewMetric("App version", sparkplug.DataType_String, 4, AppVersion)).
+		AddMetric(*model.NewMetric("Source code", sparkplug.DataType_String, 5, SourceCode)).
+		AddMetric(*model.NewMetric("Up Time ms", sparkplug.DataType_Int64, 6, upTime).SetAlias(2)).
+		AddMetric(*model.NewMetric("Node Control/Rebirth", sparkplug.DataType_Boolean, 7, false).SetAlias(3)).
+		AddMetric(*model.NewMetric("Node Control/Reboot", sparkplug.DataType_Boolean, 8, false).SetAlias(4)).
+		AddMetric(*model.NewMetric("Node Control/Shutdown", sparkplug.DataType_Boolean, 9, false).SetAlias(5)).
+		AddMetric(*model.NewMetric("Properties/OS", sparkplug.DataType_String, 10, props.OS).SetAlias(6)).
+		AddMetric(*model.NewMetric("Properties/Kernel", sparkplug.DataType_String, 11, props.Kernel).SetAlias(7)).
+		AddMetric(*model.NewMetric("Properties/Core", sparkplug.DataType_String, 12, props.Core).SetAlias(8)).
+		AddMetric(*model.NewMetric("Properties/CPUs", sparkplug.DataType_Int32, 13, int32(props.CPUs)).SetAlias(9)).
+		AddMetric(*model.NewMetric("Properties/Platform", sparkplug.DataType_String, 14, props.Platform).SetAlias(10)).
+		AddMetric(*model.NewMetric("Properties/Hostname", sparkplug.DataType_String, 15, props.Hostname).SetAlias(11))
 
-	// Encoding the Death Certificate MQTT Payload.
+	// TODO :: add propertySet
+
+	for name, d := range e.Devices {
+		var i uint64 = 1
+		if d != nil {
+			upTime := int64(time.Since(d.StartTime) / 1e+6)
+			payload.AddMetric(*model.NewMetric("Devices/"+name+"/Up Time ms", sparkplug.DataType_Int64, d.Alias+i, upTime).SetAlias(i + 11))
+		}
+	}
+
+	// Encoding the BIRTH Certificate MQTT Payload.
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
-		log.Errorln("Error encoding the EoN Node BIRTH certificate, exiting.. ⛔")
+		log.WithFields(logrus.Fields{
+			"Groupe ID": e.GroupeId,
+			"Node ID":   e.NodeId,
+		}).Errorln("Error encoding the EoN Node BIRTH certificate, retrying.. ⛔")
 		// TODO :: retry until published or cancel after timeout // panic for now
-		panic(err)
+		// panic(err)
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
@@ -115,16 +147,23 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 	})
 
 	if err != nil {
-		log.WithField("Err", err).Errorln("Error publishing the EoN Node BIRTH certificate, retrying.. ⛔")
+		log.WithFields(logrus.Fields{
+			"Groupe ID": e.GroupeId,
+			"Node ID":   e.NodeId,
+			"Err":       err,
+		}).Errorln("Error publishing the EoN Node BIRTH certificate, retrying.. ⛔")
 		// TODO :: retry until published or cancel after timeout // panic for now
-		panic(err)
+		// panic(err)
 	}
+
+	// Increment the bdSeq number for the next use
+	IncrementBdSeqNum(log)
 
 	return e
 }
 
 // AddDevice used to add/attach a given device to the EoN Node
-func (e *EdgeNodeSvc) AddDevice(device *DeviceSvc, log *logrus.Logger) *EdgeNodeSvc {
+func (e *EdgeNodeSvc) AddDevice(ctx context.Context, device *DeviceSvc, log *logrus.Logger) *EdgeNodeSvc {
 	if device != nil {
 		if device.DeviceId != "" {
 			if _, exists := e.Devices[device.DeviceId]; exists {
@@ -132,6 +171,10 @@ func (e *EdgeNodeSvc) AddDevice(device *DeviceSvc, log *logrus.Logger) *EdgeNode
 				return e
 			}
 			e.Devices[device.DeviceId] = device
+
+			// Republish NBIRTH certificate including the new device
+			e.PublishBirth(ctx, log)
+
 			log.WithField("Device Id", device.DeviceId).Infoln("Device added successfully ✅")
 			return e
 		}
@@ -157,8 +200,8 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	}
 
 	// Building up the Death Certificate MQTT Payload.
-	payload := model.NewSparkplubBPayload(time.Now(), GetNextSeqNum(log)).
-		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, deviceToShutdown.GetNextDeviceSeqNum(log)))
+	payload := model.NewSparkplubBPayload(time.Now(), deviceToShutdown.GetNextDeviceSeqNum(log)).
+		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, deviceToShutdown.DeviceBdSeq))
 
 	// The Edge of Network (EoN) Node is responsible for publishing DDEATH of its devices.
 	// When the EoN Node shuts down unexpectedly, the broker will send its NDEATH as well as
@@ -192,6 +235,10 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 
 	deviceToShutdown.SessionHandler.Close(ctx, deviceId)
 	deviceToShutdown = nil
+
+	// Republish NBIRTH certificate including the new device
+	e.PublishBirth(ctx, log)
+
 	log.WithField("Device Id", deviceId).Infoln("Device removed successfully ✅")
 	return e
 }
