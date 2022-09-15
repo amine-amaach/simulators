@@ -24,6 +24,7 @@ var (
 	SourceCode string = "https://github.com/amineamaach/simulators"
 )
 
+// EdgeNodeSvc struct describes the EoN Node properties
 type EdgeNodeSvc struct {
 	Namespace      string
 	GroupeId       string
@@ -32,6 +33,7 @@ type EdgeNodeSvc struct {
 	SessionHandler *MqttSessionSvc
 }
 
+// NewEdgeNodeInstance used to instantiate a new instance of the EoN Node.
 func NewEdgeNodeInstance(
 	ctx context.Context,
 	namespace, groupeId, nodeId string,

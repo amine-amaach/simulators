@@ -24,9 +24,7 @@ func main() {
 	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	logger := logrus.New()
-	logger.SetLevel(logrus.TraceLevel)
-	logger1 := logrus.New()
-	logger1.SetLevel(logrus.TraceLevel)
+	logger.SetLevel(logrus.InfoLevel)
 	mqttConfig := component.NewMQTTConfig()
 	mqttConfig.ConnectTimeout = "5s"
 	mqttConfig.KeepAlive = 10
@@ -59,6 +57,8 @@ func main() {
 		"device01",
 		logger,
 		mqttConfig,
+		10,
+		true,
 	)
 
 	if err != nil {
@@ -151,16 +151,22 @@ func main() {
 	// time.Sleep(time.Duration(time.Second) * 3)
 	// device1.ShutdownSimulator(sensor1.SensorId, logger)
 
-	time.Sleep(time.Duration(time.Second) * 5)
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
-	// node1.ShutdownDevice(ctx, device1.DeviceId, logger)
-	sensor1.Update <- simulators.UpdateSensorParams{
-		DelayMin: 1,
-		DelayMax: 1,
-		Randomize: false,
-	}
-	time.Sleep(time.Duration(time.Second) * 15)
-	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// time.Sleep(time.Duration(time.Second) * 5)
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// // node1.ShutdownDevice(ctx, device1.DeviceId, logger)
+	// sensor1.Update <- simulators.UpdateSensorParams{
+	// 	DelayMin:  1,
+	// 	DelayMax:  1,
+	// 	Randomize: false,
+	// }
+	// time.Sleep(time.Duration(time.Second) * 10)
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
+	// sensor1.Update <- simulators.UpdateSensorParams{
+	// 	DelayMin:  5,
+	// 	DelayMax:  5,
+	// 	Randomize: false,
+	// }
+	// fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	// device1, err = services.NewDeviceInstance(
 	// 	ctx,
