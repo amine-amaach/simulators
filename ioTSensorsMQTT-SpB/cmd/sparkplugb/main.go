@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
-	"time"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/services"
@@ -24,12 +23,12 @@ func main() {
 	fmt.Printf("✅✅✅✅✅✅✅✅✅✅  runtime.NumGoroutine(): %v ✅✅✅✅✅✅✅✅✅✅\n", runtime.NumGoroutine())
 
 	logger := logrus.New()
-	logger.SetLevel(logrus.InfoLevel)
+	logger.SetLevel(logrus.DebugLevel)
 	mqttConfig := component.NewMQTTConfig()
 	mqttConfig.ConnectTimeout = "5s"
-	mqttConfig.KeepAlive = 10
+	mqttConfig.KeepAlive = 2
 	mqttConfig.QoS = 1
-	mqttConfig.ConnectRetry = 3
+	mqttConfig.ConnectRetry = 1
 	mqttConfig.URL = "tcp://broker.hivemq.com:1883"
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,17 +65,19 @@ func main() {
 		return
 	}
 
-	time.Sleep(time.Duration(time.Second) * 3)
-
 	node1.AddDevice(ctx, device1, logger)
 
 	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 5, 10, false)
 	// sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 5, 9, true)
 	// sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 5, 5, false)
+	// sensor4 := simulators.NewIoTSensorSim("sensor04", 38.6, 1.1, 5, 5, false)
+	// sensor5:= simulators.NewIoTSensorSim("sensor05", 38.6, 1.1, 5, 5, false)
 
 	device1.AddSimulator(ctx, sensor1, logger).
 		// AddSimulator(ctx, sensor2, logger).
 		// AddSimulator(ctx, sensor3, logger).
+		// AddSimulator(ctx, sensor4, logger).
+		// AddSimulator(ctx, sensor5, logger).
 		RunSimulators(logger).RunPublisher(ctx, logger)
 	// RunSimulators(logger)
 

@@ -122,9 +122,9 @@ func NewDeviceInstance(
 						"Device Id": deviceInstance.DeviceId,
 						"Key":       key,
 					}).Infoln("Republishing unacknowledged messages.. 🔔")
-					// Keep retrying publishing the data to the broker until we get PUBACK
-					// or the TTL expires  
-					deviceInstance.publishSensorData(ctx,sensorId,value.Value(),log)
+					// Keep retrying publishing the data to the broker until
+					//  we get PUBACK or the TTL expires
+					deviceInstance.publishSensorData(ctx, sensorId, value.Value(), log)
 					deviceInstance.CacheStore.Delete(key)
 				}
 			}
@@ -227,8 +227,13 @@ func (d *DeviceSvc) RunSimulators(log *logrus.Logger) *DeviceSvc {
 }
 
 // PublishBirth used to publish the device DBIRTH certificate to the broker.
-func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *DeviceSvc {
+func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 	upTime := int64(time.Since(d.StartTime) / 1e+6)
+
+	// Prevent race condition on the seq number when building/publishing
+	d.connMut.Lock()
+	defer d.connMut.Unlock()
+	seq := d.GetNextDeviceSeqNum(log)
 
 	// Create the DBIRTH certificate payload
 
@@ -237,7 +242,7 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Devic
 
 	// For this simulation, we'll change things up a bit and decouple the MQTT
 	// connections for each device (as with the primary application in the specs).
-	payload := model.NewSparkplubBPayload(time.Now(), d.GetNextDeviceSeqNum(log)).
+	payload := model.NewSparkplubBPayload(time.Now(), seq).
 		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, d.DeviceBdSeq)).
 		// Add control commands to control the devices in runtime.
 		AddMetric(*model.NewMetric("Device Control/Rebirth", sparkplug.DataType_Boolean, 2, false)).
@@ -270,12 +275,11 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Devic
 			"Node ID":   d.NodeId,
 			"Device ID": d.DeviceId,
 		}).Errorln("Error encoding DBIRTH certificate ⛔")
-		// TODO :: retry until published or cancel after timeout // panic for now
-		// panic(err)
+		return
 	}
 
 	_, err = d.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId,
+		Topic:   d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
 		QoS:     1,
 		Payload: bytes,
 	})
@@ -287,14 +291,11 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Devic
 			"Device ID": d.DeviceId,
 			"Err":       err,
 		}).Errorln("Error publishing DBIRTH certificate, retrying.. ⛔")
-		// TODO :: retry until published or cancel after timeout // panic for now
-		// panic(err)
+		return
 	}
 
 	// Increment the bdSeq number for the next use
 	IncrementBdSeqNum(log)
-
-	return d
 }
 
 // RunPublisher used to publish all the DDATA to the broker
@@ -341,12 +342,15 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 
 // publishSensorData used by RunPublisher to prepare the payload of a sensor and publishes it to the broker.
 func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data float64, log *logrus.Logger) {
+	// Preventing race condition between goroutines when building/publishing payloads.
+	d.connMut.Lock()
+	defer d.connMut.Unlock()
+
 	// Only a device instance that is permitted to run a simulator attached to it.
 	topic := d.Namespace + "/" + d.GroupeId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
 
-	d.connMut.RLock()
 	cm := d.SessionHandler.MqttClient
-	d.connMut.RUnlock()
+	seq := d.GetNextDeviceSeqNum(log)
 
 	if cm == nil {
 		log.WithFields(logrus.Fields{
@@ -357,13 +361,14 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 
 	// Building up the DDATA Payload.
 	alias := d.Simulators[sensorId].Alias
-	payload := model.NewSparkplubBPayload(time.Now(), d.GetNextDeviceSeqNum(log)).
+	payload := model.NewSparkplubBPayload(time.Now(), seq).
 		// Metric name - should only be included on birth
 		AddMetric(*model.NewMetric("", 10, alias, data))
 		//  sparkplug.DataType_Double == 10
 
 	// Encoding the sparkplug Payload.
 	msg, err := NewSparkplugBEncoder(log).GetBytes(payload)
+
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"Groupe Id": d.GroupeId,
@@ -372,15 +377,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 			"Sensor Id": sensorId,
 			"Err":       err,
 		}).Errorln("Error encoding the sparkplug payload, not publishing.. ⛔")
-		return
 	}
-
-	log.WithFields(logrus.Fields{
-		"Groupe Id": d.GroupeId,
-		"Node Id":   d.NodeId,
-		"Device Id": d.DeviceId,
-		"Sensor Id": sensorId,
-	}).Debugln("New data point : ", data)
 
 	// Publish will block so we run it in a goRoutine
 	go func(ctx context.Context, cm *autopaho.ConnectionManager, msg []byte) {
@@ -407,6 +404,16 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 						data,
 						ttlcache.DefaultTTL).ExpiresAt().Local().String(), " 🔔",
 				)
+				// In case of failure we don't want to increment the Seq number.
+				// It gets incremented automatically when building the payload.
+				// Only when store and forward is enabled to keep track of unacknowledged messages.
+				if d.DeviceSeq == 0 {
+					d.DeviceSeq = 256
+				} else {
+					d.DeviceSeq--
+				}
+				seq--
+
 			} else {
 				log.WithFields(logrus.Fields{
 					"Groupe Id":       d.GroupeId,
@@ -415,6 +422,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Sensor Id":       sensorId,
 					"Store & Forward": "Disabled",
 					"Err":             err,
+					"Device Seq":      seq,
 				}).Errorln("Connection with the MQTT broker is currently down, dropping data.. ⛔")
 			}
 
@@ -429,10 +437,11 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 			}).Errorf("reason code %d received ⛔\n", pr.ReasonCode)
 		} else {
 			log.WithFields(logrus.Fields{
-				"Groupe Id": d.GroupeId,
-				"Node Id":   d.NodeId,
-				"Device Id": d.DeviceId,
-				"Sensor Id": sensorId,
+				"Groupe Id":  d.GroupeId,
+				"Node Id":    d.NodeId,
+				"Device Id":  d.DeviceId,
+				"Sensor Id":  sensorId,
+				"Device Seq": seq,
 			}).Infoln("DDATA Published to the broker ✅")
 		}
 	}(ctx, cm, msg)

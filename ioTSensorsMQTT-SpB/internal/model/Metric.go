@@ -58,7 +58,7 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 	}
 
 	log.WithFields(logrus.Fields{
-		"Metric_name": m.Name,
+		"Metric alias": m.Alias,
 	}).Debugln("Converting a new sparkplug metric .. 🔔")
 
 	// Set data type
@@ -109,8 +109,8 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 
 func (m *Metric) GetValue(protoMetric *sparkplug.Payload_Metric, log *logrus.Logger) error {
 	log.WithFields(logrus.Fields{
-		"Metric_name":     m.Name,
-		"Metric_dataType": m.DataType,
+		"Metric alias":     m.Alias,
+		"Metric dataType": m.DataType,
 	}).Debugln("Parsing metric data type .. 🔔")
 	switch m.DataType {
 	case sparkplug.DataType_Boolean:

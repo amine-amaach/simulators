@@ -52,8 +52,9 @@ func (encoder *SparkplugBEncoder) GetBytes(payload *model.SparkplugBPayload) ([]
 		protoMetric := &sparkplug.Payload_Metric{}
 		if err := metric.ConvertMetric(protoMetric, encoder.log); err != nil {
 			encoder.log.WithFields(logrus.Fields{
-				"Metric Name": metric.Name,
-				"ERROR Msg":         err,
+				"Metric name":  metric.Name,
+				"Metric alias": metric.Alias,
+				"ERROR Msg":    err,
 			}).Errorln("Failed to convert Metric to sparkplug B model, skipping.. ⛔")
 			continue
 		}
@@ -67,13 +68,10 @@ func (encoder *SparkplugBEncoder) GetBytes(payload *model.SparkplugBPayload) ([]
 	out, err := proto.Marshal(&protoMsg)
 	if err != nil {
 		encoder.log.WithFields(logrus.Fields{
-			"Seq": payload.Seq,
 			"msg": err,
 		}).Errorln("Failed to encode Sparkplug B payload ⛔")
 		return nil, ErrEncodingFailed
 	}
-	encoder.log.WithFields(logrus.Fields{
-		"Seq": payload.Seq,
-	}).Debugln("Encoding Sparkplug B payload : Successful ✅")
+	encoder.log.Debugln("Sparkplug B payload encoding : Successful ✅")
 	return out, nil
 }
