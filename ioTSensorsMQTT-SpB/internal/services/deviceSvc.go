@@ -122,11 +122,12 @@ func NewDeviceInstance(
 						"Device Id": deviceInstance.DeviceId,
 						"Key":       key,
 					}).Infoln("Republishing unacknowledged messages.. 🔔")
-					// Keep retrying publishing the data to the broker until
-					//  we get PUBACK or the TTL expires
+					// Keep retrying publishing the data to the broker until we get
+					// PUBACK or the TTL expires.
 					deviceInstance.publishSensorData(ctx, sensorId, value.Value(), log)
-					deviceInstance.CacheStore.Delete(key)
 				}
+				// Clear the in-memory store
+				deviceInstance.CacheStore.DeleteAll()
 			}
 		})
 
@@ -231,9 +232,9 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 	upTime := int64(time.Since(d.StartTime) / 1e+6)
 
 	// Prevent race condition on the seq number when building/publishing
-	d.connMut.Lock()
-	defer d.connMut.Unlock()
+	d.connMut.RLock()
 	seq := d.GetNextDeviceSeqNum(log)
+	d.connMut.RUnlock()
 
 	// Create the DBIRTH certificate payload
 
@@ -343,8 +344,8 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 // publishSensorData used by RunPublisher to prepare the payload of a sensor and publishes it to the broker.
 func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data float64, log *logrus.Logger) {
 	// Preventing race condition between goroutines when building/publishing payloads.
-	d.connMut.Lock()
-	defer d.connMut.Unlock()
+	d.connMut.RLock()
+	defer d.connMut.RUnlock()
 
 	// Only a device instance that is permitted to run a simulator attached to it.
 	topic := d.Namespace + "/" + d.GroupeId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
@@ -399,20 +400,13 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Err":             err,
 				}).Errorln("Connection with the MQTT broker is currently down, retrying when connection is up.. ⛔")
 
+				CachedMessages++
+
 				log.Infoln("New data point stored, expires at ",
 					d.CacheStore.Set(sensorId+":"+fmt.Sprintf("%d", time.Now().UnixMilli()),
 						data,
 						ttlcache.DefaultTTL).ExpiresAt().Local().String(), " 🔔",
 				)
-				// In case of failure we don't want to increment the Seq number.
-				// It gets incremented automatically when building the payload.
-				// Only when store and forward is enabled to keep track of unacknowledged messages.
-				if d.DeviceSeq == 0 {
-					d.DeviceSeq = 256
-				} else {
-					d.DeviceSeq--
-				}
-				seq--
 
 			} else {
 				log.WithFields(logrus.Fields{
@@ -424,6 +418,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Err":             err,
 					"Device Seq":      seq,
 				}).Errorln("Connection with the MQTT broker is currently down, dropping data.. ⛔")
+				UnAckMessages++
 			}
 
 		} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 { // 16 = Server received message but there are no subscribers
@@ -435,7 +430,9 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Device Id": d.DeviceId,
 				"Sensor Id": sensorId,
 			}).Errorf("reason code %d received ⛔\n", pr.ReasonCode)
+			UnAckMessages++
 		} else {
+			AckMessages++
 			log.WithFields(logrus.Fields{
 				"Groupe Id":  d.GroupeId,
 				"Node Id":    d.NodeId,
@@ -443,6 +440,27 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Sensor Id":  sensorId,
 				"Device Seq": seq,
 			}).Infoln("DDATA Published to the broker ✅")
+
+			if d.Enabled {
+				CachedMessages = d.CacheStore.Len()
+				// Check if we still have cached message as we could lose connection during the connection timeout.
+				if CachedMessages > 0 {
+					for key, value := range d.CacheStore.Items() {
+						sensorId := strings.Split(key, ":")[0]
+						log.WithFields(logrus.Fields{
+							"Groupe Id": d.GroupeId,
+							"Node Id":   d.NodeId,
+							"Device Id": d.DeviceId,
+							"Key":       key,
+						}).Infoln("Republishing unacknowledged messages.. 🔔")
+						// Keep retrying publishing the data to the broker until we get
+						// PUBACK or the TTL expires.
+						d.publishSensorData(ctx, sensorId, value.Value(), log)
+					}
+					// Clear the in-memory store
+					d.CacheStore.DeleteAll()
+				}
+			}
 		}
 	}(ctx, cm, msg)
 }

@@ -24,6 +24,13 @@ var (
 	SourceCode string = "https://github.com/amineamaach/simulators"
 )
 
+var (
+	// Monitoring
+	AckMessages    int
+	UnAckMessages  int
+	CachedMessages int
+)
+
 // EdgeNodeSvc struct describes the EoN Node properties
 type EdgeNodeSvc struct {
 	Namespace      string
@@ -138,8 +145,6 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 			"Groupe ID": e.GroupeId,
 			"Node ID":   e.NodeId,
 		}).Errorln("Error encoding the EoN Node BIRTH certificate, retrying.. ⛔")
-		// TODO :: retry until published or cancel after timeout // panic for now
-		// panic(err)
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
@@ -154,8 +159,6 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 			"Node ID":   e.NodeId,
 			"Err":       err,
 		}).Errorln("Error publishing the EoN Node BIRTH certificate, retrying.. ⛔")
-		// TODO :: retry until published or cancel after timeout // panic for now
-		// panic(err)
 	}
 
 	// Increment the bdSeq number for the next use
@@ -202,7 +205,10 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	}
 
 	// Building up the Death Certificate MQTT Payload.
-	payload := model.NewSparkplubBPayload(time.Now(), deviceToShutdown.GetNextDeviceSeqNum(log)).
+	deviceToShutdown.connMut.RLock()
+	seq := deviceToShutdown.GetNextDeviceSeqNum(log)
+	deviceToShutdown.connMut.RUnlock()
+	payload := model.NewSparkplubBPayload(time.Now(), seq).
 		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, deviceToShutdown.DeviceBdSeq))
 
 	// The Edge of Network (EoN) Node is responsible for publishing DDEATH of its devices.
