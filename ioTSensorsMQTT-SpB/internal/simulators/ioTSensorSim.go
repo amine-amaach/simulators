@@ -45,6 +45,12 @@ type IoTSensorSim struct {
 }
 
 type UpdateSensorParams struct {
+	// Sensor Id
+	SensorId string
+	// sensor data mean value
+	Mean float64
+	// sensor data standard deviation value
+	Std float64
 	// Delay between each data point
 	DelayMin uint32
 	DelayMax uint32
@@ -160,6 +166,8 @@ func (s *IoTSensorSim) Run(log *logrus.Logger) {
 				s.SensorData <- s.calculateNextValue()
 			case newParams := <-s.Update:
 				if newParams.DelayMin > 0 && !(newParams.DelayMin > newParams.DelayMax && newParams.Randomize) {
+					s.mean = newParams.Mean
+					s.standardDeviation = newParams.Std
 					s.DelayMax = newParams.DelayMax
 					s.DelayMin = newParams.DelayMin
 					s.Randomize = newParams.Randomize

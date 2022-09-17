@@ -2,15 +2,18 @@ package services
 
 import (
 	"context"
+	"syscall"
 	"time"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
 	sparkplug "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
 	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/matishsiao/goInfo"
 	"github.com/sirupsen/logrus"
+	proto "google.golang.org/protobuf/proto"
 )
 
 var (
@@ -43,7 +46,7 @@ type EdgeNodeSvc struct {
 // NewEdgeNodeInstance used to instantiate a new instance of the EoN Node.
 func NewEdgeNodeInstance(
 	ctx context.Context,
-	namespace, groupeId, nodeId string,
+	namespace, groupId, nodeId string,
 	bdSeq uint64,
 	log *logrus.Logger,
 	mqttConfigs *component.MQTTConfig,
@@ -57,13 +60,13 @@ func NewEdgeNodeInstance(
 
 	eonNode := &EdgeNodeSvc{
 		Namespace:      namespace,
-		GroupeId:       groupeId,
+		GroupeId:       groupId,
 		NodeId:         nodeId,
 		SessionHandler: mqttSession,
 		Devices:        make(map[string]*DeviceSvc),
 	}
 
-	willTopic := namespace + "/" + groupeId + "/NDEATH/" + nodeId
+	willTopic := namespace + "/" + groupId + "/NDEATH/" + nodeId
 
 	// Building up the Death Certificate MQTT Payload.
 	payload := model.NewSparkplubBPayload(time.Now(), GetNextSeqNum(log)).
@@ -90,8 +93,22 @@ func NewEdgeNodeInstance(
 				"Groupe Id": eonNode.GroupeId,
 				"Node Id":   eonNode.NodeId,
 			}).Infoln("NBIRTH certificate published successfully ✅")
-		}, paho.NewSingleHandlerRouter(func(p *paho.Publish) {
 
+			// Subscribe to EoN Node control commands
+			topic := namespace + "/" + groupId + "/NCMD/" + nodeId
+
+			if _, err := cm.Subscribe(ctx, &paho.Subscribe{
+				Subscriptions: map[string]paho.SubscribeOptions{
+					topic: {QoS: mqttConfigs.QoS},
+				},
+			}); err != nil {
+				log.Infof("Failed to subscribe (%s). This is likely to mean no messages will be received. ⛔\n", err)
+				return
+			}
+			log.WithField("Topic", topic).Infoln("MQTT subscription made ✅")
+		},
+		paho.NewSingleHandlerRouter(func(p *paho.Publish) {
+			eonNode.OnMessageArrived(ctx, p, log)
 		}),
 	)
 
@@ -120,24 +137,24 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 		AddMetric(*model.NewMetric("Website", sparkplug.DataType_String, 3, Website)).
 		AddMetric(*model.NewMetric("App version", sparkplug.DataType_String, 4, AppVersion)).
 		AddMetric(*model.NewMetric("Source code", sparkplug.DataType_String, 5, SourceCode)).
-		AddMetric(*model.NewMetric("Up Time ms", sparkplug.DataType_Int64, 6, upTime).SetAlias(2)).
-		AddMetric(*model.NewMetric("Node Control/Rebirth", sparkplug.DataType_Boolean, 7, false).SetAlias(3)).
-		AddMetric(*model.NewMetric("Node Control/Reboot", sparkplug.DataType_Boolean, 8, false).SetAlias(4)).
-		AddMetric(*model.NewMetric("Node Control/Shutdown", sparkplug.DataType_Boolean, 9, false).SetAlias(5)).
-		AddMetric(*model.NewMetric("Properties/OS", sparkplug.DataType_String, 10, props.OS).SetAlias(6)).
-		AddMetric(*model.NewMetric("Properties/Kernel", sparkplug.DataType_String, 11, props.Kernel).SetAlias(7)).
-		AddMetric(*model.NewMetric("Properties/Core", sparkplug.DataType_String, 12, props.Core).SetAlias(8)).
-		AddMetric(*model.NewMetric("Properties/CPUs", sparkplug.DataType_Int32, 13, int32(props.CPUs)).SetAlias(9)).
-		AddMetric(*model.NewMetric("Properties/Platform", sparkplug.DataType_String, 14, props.Platform).SetAlias(10)).
-		AddMetric(*model.NewMetric("Properties/Hostname", sparkplug.DataType_String, 15, props.Hostname).SetAlias(11))
-
-	// TODO :: add propertySet
+		AddMetric(*model.NewMetric("Up Time ms", sparkplug.DataType_Int64, 6, upTime)).
+		AddMetric(*model.NewMetric("Node Control/Rebirth", sparkplug.DataType_Boolean, 7, false)).
+		AddMetric(*model.NewMetric("Node Control/Reboot", sparkplug.DataType_Boolean, 8, false)).
+		AddMetric(*model.NewMetric("Node Control/Shutdown", sparkplug.DataType_Boolean, 9, false)).
+		AddMetric(*model.NewMetric("Node Control/RemoveDevice", sparkplug.DataType_Boolean, 16, false)).
+		AddMetric(*model.NewMetric("Node Control/AddDevice", sparkplug.DataType_Boolean, 17, false)).
+		AddMetric(*model.NewMetric("Properties/OS", sparkplug.DataType_String, 10, props.OS)).
+		AddMetric(*model.NewMetric("Properties/Kernel", sparkplug.DataType_String, 11, props.Kernel)).
+		AddMetric(*model.NewMetric("Properties/Core", sparkplug.DataType_String, 12, props.Core)).
+		AddMetric(*model.NewMetric("Properties/CPUs", sparkplug.DataType_Int32, 13, int32(props.CPUs))).
+		AddMetric(*model.NewMetric("Properties/Platform", sparkplug.DataType_String, 14, props.Platform)).
+		AddMetric(*model.NewMetric("Properties/Hostname", sparkplug.DataType_String, 15, props.Hostname))
 
 	for name, d := range e.Devices {
 		var i uint64 = 1
 		if d != nil {
 			upTime := int64(time.Since(d.StartTime) / 1e+6)
-			payload.AddMetric(*model.NewMetric("Devices/"+name+"/Up Time ms", sparkplug.DataType_Int64, d.Alias+i, upTime).SetAlias(i + 11))
+			payload.AddMetric(*model.NewMetric("Devices/"+name+"/Up Time ms", sparkplug.DataType_Int64, d.Alias+i, upTime))
 		}
 	}
 
@@ -151,23 +168,201 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   e.Namespace + "/" + e.GroupeId + "/NBIRTH/" + e.NodeId,
-		QoS:     1,
+		Topic: e.Namespace + "/" + e.GroupeId + "/NBIRTH/" + e.NodeId,
+		QoS:   1,
+		Properties: &paho.PublishProperties{
+			User: paho.UserPropertiesFromPacketUser(
+				[]packets.User{
+					{
+						Key:   "Username",
+						Value: e.NodeId,
+					},
+				},
+			),
+		},
 		Payload: bytes,
 	})
 
 	if err != nil {
+		if Seq == 0 {
+			Seq = 256
+		} else {
+			Seq--
+		}
 		log.WithFields(logrus.Fields{
 			"Groupe ID": e.GroupeId,
 			"Node ID":   e.NodeId,
 			"Err":       err,
 		}).Errorln("Error publishing the EoN Node BIRTH certificate, retrying.. ⛔")
+	} else {
+		// Increment the bdSeq number for the next use
+		IncrementBdSeqNum(log)
 	}
 
-	// Increment the bdSeq number for the next use
-	IncrementBdSeqNum(log)
-
 	return e
+}
+
+// OnMessageArrived used to handle the EoN Node incoming control commands
+func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log *logrus.Logger) {
+	log.WithField("Topic", msg.Topic).Debugln("New NCMD arrived 🔔")
+	var payloadTemplate sparkplug.Payload_Template
+	err := proto.Unmarshal(msg.Payload, &payloadTemplate)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"Topic": msg.Topic,
+			"Err":   err,
+		}).Errorln("Failed to unmarshal DCMD payload ⛔")
+		return
+	}
+
+	for _, metric := range payloadTemplate.Metrics {
+		switch *metric.Name {
+		case "Node Control/Reboot":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this NCMD ⛔")
+				return
+			} else if value.BooleanValue {
+				log.WithField("Node Id", e.NodeId).Infoln("Reboot simulation.. 🔔")
+				time.Sleep(time.Duration(5) * time.Second)
+				log.WithField("Node Id", e.NodeId).Infoln("Node rebooted successfully ✅")
+			}
+
+		case "Node Control/Shutdown":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this DCMD ⛔")
+			} else if value.BooleanValue {
+				syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			}
+
+		case "Node Control/Rebirth":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this NCMD ⛔")
+			} else if value.BooleanValue {
+				e.PublishBirth(ctx, log)
+				log.WithFields(logrus.Fields{
+					"Topic":   msg.Topic,
+					"Node Id": e.NodeId,
+				}).Infoln("NBIRTH certificate published successfully ✅")
+			}
+
+		case "Node Control/RemoveDevice":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this NCMD ⛔")
+			} else if value.BooleanValue {
+				for _, param := range payloadTemplate.Parameters {
+					if *param.Name == "DeviceId" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_StringValue); ok {
+							e.ShutdownDevice(ctx, name.StringValue, log)
+							return
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse device id ⛔")
+							return
+						}
+					}
+				}
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Name":  *metric.Name,
+				}).Errorln("device id was not found ⛔")
+			}
+
+		case "Node Control/AddDevice":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this NCMD ⛔")
+			} else if value.BooleanValue {
+				type AddDevice struct{
+					DeviceIdValue string
+					TtlValue uint32
+					EnabledValue bool
+				}
+				addDevice := AddDevice{}				
+
+				for _, param := range payloadTemplate.Parameters {
+					if *param.Name == "DeviceId" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_StringValue); ok {
+							log.Errorln(name.StringValue)
+							addDevice.DeviceIdValue = name.StringValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse device id ⛔")
+							return
+						}
+					}
+					if *param.Name == "StoreAndForward" {
+						if enabled, ok := param.Value.(*sparkplug.Payload_Template_Parameter_BooleanValue); ok {
+							addDevice.EnabledValue = enabled.BooleanValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse StoreAndForward value ⛔")
+							return
+						}
+					}
+					if *param.Name == "TTL" {
+						if ttl, ok := param.Value.(*sparkplug.Payload_Template_Parameter_IntValue); ok {
+							addDevice.TtlValue = ttl.IntValue 
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse StoreAndForward value ⛔")
+							return
+						}
+					}
+
+				}
+
+				d, err := NewDeviceInstance(
+					ctx,
+					e.Namespace,
+					e.GroupeId,
+					e.NodeId,
+					addDevice.DeviceIdValue, // Set default
+					log, 
+					&e.SessionHandler.MqttConfigs,
+					addDevice.TtlValue, // Set default
+					addDevice.EnabledValue, // Set default
+				)
+				if err != nil {
+					log.WithFields(logrus.Fields{
+						"Topic": msg.Topic,
+						"Name":  *metric.Name,
+					}).Errorln("Failed to instantiate new device ⛔")
+					return
+				}
+
+				// Add new device
+				e.AddDevice(ctx,d,log)
+			}
+
+		default:
+			log.WithFields(logrus.Fields{
+				"Topic": msg.Topic,
+				"Name":  *metric.Name,
+			}).Errorln("NCMD not defined ⛔")
+		}
+	}
 }
 
 // AddDevice used to add/attach a given device to the EoN Node
@@ -200,16 +395,16 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 		log.WithField("Device Id", deviceId).Warnln("Device not found 🔔")
 		return e
 	}
+	deviceToShutdown.connMut.RLock()
+	defer deviceToShutdown.connMut.RUnlock()
 	delete(e.Devices, deviceId)
 	log.WithField("Device Id", deviceId).Debugln("Shutdown all attached sensors.. 🔔")
 	for _, sim := range deviceToShutdown.Simulators {
-		deviceToShutdown.ShutdownSimulator(ctx,sim.SensorId,log)
+		deviceToShutdown.ShutdownSimulator(ctx, sim.SensorId, log)
 	}
 
 	// Building up the Death Certificate MQTT Payload.
-	deviceToShutdown.connMut.RLock()
 	seq := deviceToShutdown.GetNextDeviceSeqNum(log)
-	deviceToShutdown.connMut.RUnlock()
 	payload := model.NewSparkplubBPayload(time.Now(), seq).
 		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, deviceToShutdown.DeviceBdSeq))
 
@@ -229,8 +424,18 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   e.Namespace + "/" + e.GroupeId + "/DDEATH/" + e.NodeId + "/" + deviceId,
-		QoS:     1,
+		Topic: e.Namespace + "/" + e.GroupeId + "/DDEATH/" + e.NodeId + "/" + deviceId,
+		QoS:   1,
+		Properties: &paho.PublishProperties{
+			User: paho.UserPropertiesFromPacketUser(
+				[]packets.User{
+					{
+						Key:   "Username",
+						Value: e.NodeId,
+					},
+				},
+			),
+		},
 		Payload: bytes,
 	})
 
@@ -246,7 +451,7 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	deviceToShutdown.SessionHandler.Close(ctx, deviceId)
 	deviceToShutdown = nil
 
-	// Republish NBIRTH certificate including the new device
+	// Republish NBIRTH certificate
 	e.PublishBirth(ctx, log)
 
 	log.WithField("Device Id", deviceId).Infoln("Device removed successfully ✅")
