@@ -26,6 +26,7 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
 	willTopic string,
 	payload []byte,
 	onConnectionUp func(cm *autopaho.ConnectionManager, c *paho.Connack),
+	messageHandler *paho.SingleHandlerRouter,
 ) error {
 	if m.MqttClient != nil {
 		m.Log.Warnln("MQTT session already exists 🔔")
@@ -71,7 +72,7 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
 		// TODO : TlsConfig
 		ClientConfig: paho.ClientConfig{
 			ClientID: cliId,
-
+			Router: messageHandler,
 			OnClientError: func(err error) {
 				m.Log.Errorf("Server requested disconnect: %s ⛔\n", err)
 			},

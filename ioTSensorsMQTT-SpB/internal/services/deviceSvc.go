@@ -16,6 +16,7 @@ import (
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/sirupsen/logrus"
+	proto "google.golang.org/protobuf/proto"
 )
 
 // DeviceSvc struct describes the properties of a device
@@ -129,7 +130,23 @@ func NewDeviceInstance(
 				// Clear the in-memory store
 				deviceInstance.CacheStore.DeleteAll()
 			}
-		})
+
+			// Subscribe to device control commands
+			topic := namespace + "/" + groupeId + "/DCMD/" + nodeId + "/" + deviceId
+			if _, err := cm.Subscribe(ctx, &paho.Subscribe{
+				Subscriptions: map[string]paho.SubscribeOptions{
+					topic: {QoS: mqttConfigs.QoS},
+				},
+			}); err != nil {
+				log.Infof("Failed to subscribe (%s). This is likely to mean no messages will be received. ⛔\n", err)
+				return
+			}
+			log.WithField("Topic", topic).Infoln("MQTT subscription made ✅")
+
+		}, paho.NewSingleHandlerRouter(func(p *paho.Publish) {
+			deviceInstance.OnMessageArrived(ctx, p, log)
+		}),
+	)
 
 	if err != nil {
 		log.Errorln("Error establishing MQTT session ⛔")
@@ -140,6 +157,245 @@ func NewDeviceInstance(
 	deviceInstance.Alias = uint64(100 + rand.Int63n(10000))
 	deviceInstance.SessionHandler = mqttSession
 	return deviceInstance, err
+}
+
+// PublishBirth used to publish the device DBIRTH certificate to the broker.
+func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
+	upTime := int64(time.Since(d.StartTime) / 1e+6)
+
+	// Prevent race condition on the seq number when building/publishing
+	d.connMut.RLock()
+	seq := d.GetNextDeviceSeqNum(log)
+	d.connMut.RUnlock()
+
+	// Create the DBIRTH certificate payload
+
+	// The DBIRTH must include a seq number in the payload and it must have a value
+	// of one greater than the previous MQTT message from the EoN node. (spB specs)
+
+	// For this simulation, we'll change things up a bit and decouple the MQTT
+	// connections for each device (as with the primary application in the specs).
+	payload := model.NewSparkplubBPayload(time.Now(), seq).
+		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, d.DeviceBdSeq)).
+		// Add control commands to control the devices in runtime.
+		AddMetric(*model.NewMetric("Device Control/Rebirth", sparkplug.DataType_Boolean, 2, false)).
+		AddMetric(*model.NewMetric("Device Control/OFF", sparkplug.DataType_Boolean, 3, false)).
+		// TODO :: Add metadata with new params
+		AddMetric(*model.NewMetric("Device Control/AddSimulator", sparkplug.DataType_Boolean, 4, false)).
+		AddMetric(*model.NewMetric("Device Control/RemoveSimulator", sparkplug.DataType_Boolean, 5, false)).
+		AddMetric(*model.NewMetric("Device Control/UpdateSimulator", sparkplug.DataType_Boolean, 6, false)).
+		// Add some properties
+		AddMetric(*model.NewMetric("Properties/Parent EoN Node", sparkplug.DataType_String, 7, d.NodeId)).
+		AddMetric(*model.NewMetric("Properties/Number of simulators", sparkplug.DataType_Int64, 8, int64(len(d.Simulators)))).
+		AddMetric(*model.NewMetric("Properties/Up time ms", sparkplug.DataType_Int64, 9, upTime))
+
+	for _, sim := range d.Simulators {
+		var i uint64 = 1
+		if sim != nil {
+			payload.AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId, sparkplug.DataType_Double, sim.Alias, 0.0)).
+				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Minimum delay", sparkplug.DataType_UInt32, sim.Alias+i, sim.DelayMin)).
+				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Maximum delay", sparkplug.DataType_UInt32, sim.Alias+i, sim.DelayMax)).
+				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Randomized", sparkplug.DataType_Boolean, sim.Alias+i, sim.Randomize))
+			i++
+		}
+	}
+
+	// Encoding the BIRTH Certificate MQTT Payload.
+	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"Groupe ID": d.GroupeId,
+			"Node ID":   d.NodeId,
+			"Device ID": d.DeviceId,
+		}).Errorln("Error encoding DBIRTH certificate ⛔")
+		return
+	}
+
+	_, err = d.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
+		Topic:   d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
+		QoS:     1,
+		Payload: bytes,
+	})
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"Groupe ID": d.GroupeId,
+			"Node ID":   d.NodeId,
+			"Device ID": d.DeviceId,
+			"Err":       err,
+		}).Errorln("Error publishing DBIRTH certificate, retrying.. ⛔")
+		return
+	}
+
+	// Increment the bdSeq number for the next use
+	IncrementBdSeqNum(log)
+}
+
+// OnMessageArrived used to handle the device incoming control commands
+func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log *logrus.Logger) {
+	log.WithField("Topic", msg.Topic).Debugln("New DCMD arrived 🔔")
+	var payloadTemplate sparkplug.Payload_Template
+	err := proto.Unmarshal(msg.Payload, &payloadTemplate)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"Topic": msg.Topic,
+			"Err":   err,
+		}).Errorln("Failed to unmarshal DCMD payload ⛔")
+		return
+	}
+	for _, metric := range payloadTemplate.Metrics {
+		switch *metric.Name {
+		case "Device Control/Rebirth":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this DCMD ⛔")
+			} else if value.BooleanValue {
+				d.PublishBirth(ctx, log)
+				log.WithField("Device Id", d.DeviceId).Infoln("DBIRTH published ✅")
+			}
+
+		case "Device Control/OFF":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this DCMD ⛔")
+			} else if value.BooleanValue {
+				for _, sim := range d.Simulators {
+					d.ShutdownSimulator(ctx,sim.SensorId,log)
+				}
+				log.WithField("Device Id", d.DeviceId).Infoln("Device turned off successfully ✅")
+			}
+		case "Device Control/AddSimulator":
+			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
+				log.WithFields(logrus.Fields{
+					"Topic": msg.Topic,
+					"Value": value,
+				}).Errorln("Wrong data type received for this DCMD ⛔")
+			} else if value.BooleanValue {
+				type sensorParams struct {
+					name      string
+					mean      float64
+					std       float64
+					delayMin  uint32
+					delayMax  uint32
+					randomize bool
+				}
+				newSensor := sensorParams{}
+				for _, param := range payloadTemplate.Parameters {
+					if *param.Name == "SensorId" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_StringValue); ok {
+							newSensor.name = name.StringValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse sensor id ⛔")
+							return
+						}
+					}
+
+					if *param.Name == "Mean" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_DoubleValue); ok {
+							newSensor.mean = name.DoubleValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse sensor mean value ⛔")
+							return
+						}
+					}
+
+					if *param.Name == "Std" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_DoubleValue); ok {
+							newSensor.std = name.DoubleValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse sensor Std value ⛔")
+							return
+						}
+					}
+
+					if *param.Name == "DelayMin" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_IntValue); ok {
+							newSensor.delayMin = name.IntValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse sensor min delay value ⛔")
+							return
+						}
+					}
+
+					if *param.Name == "DelayMax" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_IntValue); ok {
+							newSensor.delayMax = name.IntValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse sensor max delay value ⛔")
+							return
+						}
+					}
+
+					if *param.Name == "Randomize" {
+						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_BooleanValue); ok {
+							newSensor.randomize = name.BooleanValue
+						} else {
+							log.WithFields(logrus.Fields{
+								"Topic": msg.Topic,
+								"Name":  *param.Name,
+							}).Errorln("Failed to parse sensor randomize value ⛔")
+							return
+						}
+					}
+				}
+
+				log.Infoln(newSensor)
+
+				d.AddSimulator(ctx,
+					simulators.NewIoTSensorSim(
+						newSensor.name,
+						newSensor.mean,
+						newSensor.std,
+						newSensor.delayMin,
+						newSensor.delayMax,
+						newSensor.randomize,
+					), log,
+				).RunSimulators(log).RunPublisher(ctx, log)
+			}
+
+		case "Device Control/RemoveSimulator":
+			for _, param := range payloadTemplate.Parameters {
+				if *param.Name == "SensorId" {
+					if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_StringValue); ok {
+						d.ShutdownSimulator(ctx, name.StringValue, log)
+						return
+					} else {
+						log.WithFields(logrus.Fields{
+							"Topic": msg.Topic,
+							"Name":  *param.Name,
+						}).Errorln("Failed to parse sensor id ⛔")
+						return
+					}
+				}
+			}
+			log.WithFields(logrus.Fields{
+				"Topic": msg.Topic,
+				"Name":  *metric.Name,
+			}).Errorln("Sensor id was not found ⛔")
+
+		default:
+			log.Errorln("DCMD not defined ⛔")
+		}
+	}
 }
 
 // AddSimulator used to attach a simulated sensor to the device
@@ -216,87 +472,11 @@ func (d *DeviceSvc) ShutdownSimulator(ctx context.Context, sensorId string, log 
 func (d *DeviceSvc) RunSimulators(log *logrus.Logger) *DeviceSvc {
 	for _, sim := range d.Simulators {
 		if sim.IsRunning {
-			log.WithFields(logrus.Fields{
-				"Device Id": d.DeviceId,
-				"Sensor Id": sim.SensorId,
-			}).Warnln("Sensor is already running 🔔")
 			continue
 		}
 		sim.Run(log)
 	}
 	return d
-}
-
-// PublishBirth used to publish the device DBIRTH certificate to the broker.
-func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
-	upTime := int64(time.Since(d.StartTime) / 1e+6)
-
-	// Prevent race condition on the seq number when building/publishing
-	d.connMut.RLock()
-	seq := d.GetNextDeviceSeqNum(log)
-	d.connMut.RUnlock()
-
-	// Create the DBIRTH certificate payload
-
-	// The DBIRTH must include a seq number in the payload and it must have a value
-	// of one greater than the previous MQTT message from the EoN node. (spB specs)
-
-	// For this simulation, we'll change things up a bit and decouple the MQTT
-	// connections for each device (as with the primary application in the specs).
-	payload := model.NewSparkplubBPayload(time.Now(), seq).
-		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, d.DeviceBdSeq)).
-		// Add control commands to control the devices in runtime.
-		AddMetric(*model.NewMetric("Device Control/Rebirth", sparkplug.DataType_Boolean, 2, false)).
-		AddMetric(*model.NewMetric("Device Control/Shutdown", sparkplug.DataType_Boolean, 3, false)).
-		// TODO :: Add metadata with new params
-		AddMetric(*model.NewMetric("Device Control/AddSimulator", sparkplug.DataType_Boolean, 4, false)).
-		AddMetric(*model.NewMetric("Device Control/RemoveSimulator", sparkplug.DataType_Boolean, 5, false)).
-		AddMetric(*model.NewMetric("Device Control/UpdateSimulator", sparkplug.DataType_Boolean, 6, false)).
-		// Add some properties
-		AddMetric(*model.NewMetric("Properties/Parent EoN Node", sparkplug.DataType_String, 7, d.NodeId)).
-		AddMetric(*model.NewMetric("Properties/Number of simulators", sparkplug.DataType_Int64, 8, int64(len(d.Simulators)))).
-		AddMetric(*model.NewMetric("Properties/Up time ms", sparkplug.DataType_Int64, 9, upTime))
-
-	for _, sim := range d.Simulators {
-		var i uint64 = 1
-		if sim != nil {
-			payload.AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId, sparkplug.DataType_Double, sim.Alias, 0.0)).
-				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Minimum delay", sparkplug.DataType_UInt32, sim.Alias+i, sim.DelayMin)).
-				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Maximum delay", sparkplug.DataType_UInt32, sim.Alias+i, sim.DelayMax)).
-				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Randomized", sparkplug.DataType_Boolean, sim.Alias+i, sim.Randomize))
-			i++
-		}
-	}
-
-	// Encoding the BIRTH Certificate MQTT Payload.
-	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
-	if err != nil {
-		log.WithFields(logrus.Fields{
-			"Groupe ID": d.GroupeId,
-			"Node ID":   d.NodeId,
-			"Device ID": d.DeviceId,
-		}).Errorln("Error encoding DBIRTH certificate ⛔")
-		return
-	}
-
-	_, err = d.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
-		QoS:     1,
-		Payload: bytes,
-	})
-
-	if err != nil {
-		log.WithFields(logrus.Fields{
-			"Groupe ID": d.GroupeId,
-			"Node ID":   d.NodeId,
-			"Device ID": d.DeviceId,
-			"Err":       err,
-		}).Errorln("Error publishing DBIRTH certificate, retrying.. ⛔")
-		return
-	}
-
-	// Increment the bdSeq number for the next use
-	IncrementBdSeqNum(log)
 }
 
 // RunPublisher used to publish all the DDATA to the broker

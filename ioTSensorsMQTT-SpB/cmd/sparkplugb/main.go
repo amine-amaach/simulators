@@ -65,7 +65,7 @@ func main() {
 
 	node1.AddDevice(ctx, device1, logger)
 
-	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 1, 10, false)
+	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 10, 10, false)
 	// sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 1, 9, false)
 	// sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 1, 5, false)
 	// sensor4 := simulators.NewIoTSensorSim("sensor04", 38.6, 1.1, 1, 5, false)
@@ -84,5 +84,13 @@ func main() {
 	signal.Notify(sig, syscall.SIGTERM)
 
 	<-sig
+
+	// We could cancel the context at this point but will call Disconnect instead (this waits for autopaho to shutdown)
+	// ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	// defer cancel()
+	// _ = node1.SessionHandler.MqttClient.Disconnect(ctx)
+	// _ = device1.SessionHandler.MqttClient.Disconnect(ctx)
+
+	// fmt.Println("shutdown complete")
 
 }

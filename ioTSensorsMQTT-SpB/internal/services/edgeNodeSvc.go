@@ -90,7 +90,10 @@ func NewEdgeNodeInstance(
 				"Groupe Id": eonNode.GroupeId,
 				"Node Id":   eonNode.NodeId,
 			}).Infoln("NBIRTH certificate published successfully ✅")
-		})
+		}, paho.NewSingleHandlerRouter(func(p *paho.Publish) {
+
+		}),
+	)
 
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -200,8 +203,7 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	delete(e.Devices, deviceId)
 	log.WithField("Device Id", deviceId).Debugln("Shutdown all attached sensors.. 🔔")
 	for _, sim := range deviceToShutdown.Simulators {
-		sim.Shutdown <- true
-		*sim.IsAssigned = false
+		deviceToShutdown.ShutdownSimulator(ctx,sim.SensorId,log)
 	}
 
 	// Building up the Death Certificate MQTT Payload.
