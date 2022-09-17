@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/services"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -78,6 +80,9 @@ func main() {
 	// 	// AddSimulator(ctx, sensor4, logger).
 	// 	// AddSimulator(ctx, sensor5, logger).
 	// 	RunSimulators(logger).RunPublisher(ctx, logger)
+
+	http.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":8080", nil)
 
 	// Wait for a signal before exiting
 	sig := make(chan os.Signal, 1)

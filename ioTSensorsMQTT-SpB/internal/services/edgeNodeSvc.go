@@ -12,6 +12,7 @@ import (
 	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/matishsiao/goInfo"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	proto "google.golang.org/protobuf/proto"
 )
@@ -28,10 +29,26 @@ var (
 )
 
 var (
-	// Monitoring
-	AckMessages    int
-	UnAckMessages  int
-	CachedMessages int
+	AckMsgs = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "IoTSensors_project",
+		Subsystem: "SparkplugB",
+		Name:      "acknowledged_messages",
+		Help:      "Number of acknowledged messages by the broker",
+	})
+
+	UnAckMsgs = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "ioTSensors_project",
+		Subsystem: "SparkplugB",
+		Name:      "unacknowledged_messages",
+		Help:      "Number of unacknowledged messages by the broker",
+	})
+
+	CachedMsgs = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "ioTSensors_project",
+		Subsystem: "SparkplugB",
+		Name:      "cached_messages",
+		Help:      "Number of cached messages waiting to processed",
+	})
 )
 
 // EdgeNodeSvc struct describes the EoN Node properties
@@ -118,6 +135,17 @@ func NewEdgeNodeInstance(
 			"Node ID":   eonNode.NodeId,
 		}).Errorln("Error establishing MQTT session ⛔")
 		return nil, err
+	}
+
+	// Register prometheus collectors
+	if err := prometheus.Register(AckMsgs); err != nil {
+		log.Warnln("Failed to register prometheus collector : [AckMsgs]")
+	}
+	if err = prometheus.Register(UnAckMsgs); err != nil {
+		log.Warnln("Failed to register prometheus collector : [UnAckMsgs]")
+	}
+	if err := prometheus.Register(CachedMsgs); err != nil {
+		log.Warnln("Failed to register prometheus collector : [Cached]")
 	}
 
 	StartTime = time.Now()
@@ -288,12 +316,12 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 					"Value": value,
 				}).Errorln("Wrong data type received for this NCMD ⛔")
 			} else if value.BooleanValue {
-				type AddDevice struct{
+				type AddDevice struct {
 					DeviceIdValue string
-					TtlValue uint32
-					EnabledValue bool
+					TtlValue      uint32
+					EnabledValue  bool
 				}
-				addDevice := AddDevice{}				
+				addDevice := AddDevice{}
 
 				for _, param := range payloadTemplate.Parameters {
 					if *param.Name == "DeviceId" {
@@ -321,7 +349,7 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 					}
 					if *param.Name == "TTL" {
 						if ttl, ok := param.Value.(*sparkplug.Payload_Template_Parameter_IntValue); ok {
-							addDevice.TtlValue = ttl.IntValue 
+							addDevice.TtlValue = ttl.IntValue
 						} else {
 							log.WithFields(logrus.Fields{
 								"Topic": msg.Topic,
@@ -339,9 +367,9 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 					e.GroupeId,
 					e.NodeId,
 					addDevice.DeviceIdValue, // Set default
-					log, 
+					log,
 					&e.SessionHandler.MqttConfigs,
-					addDevice.TtlValue, // Set default
+					addDevice.TtlValue,     // Set default
 					addDevice.EnabledValue, // Set default
 				)
 				if err != nil {
@@ -353,7 +381,7 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 				}
 
 				// Add new device
-				e.AddDevice(ctx,d,log)
+				e.AddDevice(ctx, d, log)
 			}
 
 		default:

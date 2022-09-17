@@ -708,7 +708,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Err":             err,
 				}).Errorln("Connection with the MQTT broker is currently down, retrying when connection is up.. ⛔")
 
-				CachedMessages++
+				CachedMsgs.Inc()
 
 				log.Infoln("New data point stored, expires at ",
 					d.CacheStore.Set(sensorId+":"+fmt.Sprintf("%d", time.Now().UnixMilli()),
@@ -726,7 +726,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Err":             err,
 					"Device Seq":      seq,
 				}).Errorln("Connection with the MQTT broker is currently down, dropping data.. ⛔")
-				UnAckMessages++
+				UnAckMsgs.Inc()
 			}
 
 		} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 { // 16 = Server received message but there are no subscribers
@@ -738,9 +738,9 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Device Id": d.DeviceId,
 				"Sensor Id": sensorId,
 			}).Errorf("reason code %d received ⛔\n", pr.ReasonCode)
-			UnAckMessages++
+			UnAckMsgs.Inc()
 		} else {
-			AckMessages++
+			AckMsgs.Inc()
 			log.WithFields(logrus.Fields{
 				"Groupe Id":  d.GroupeId,
 				"Node Id":    d.NodeId,
@@ -750,9 +750,9 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 			}).Infoln("DDATA Published to the broker ✅")
 
 			if d.Enabled {
-				CachedMessages = d.CacheStore.Len()
+				CachedMsgs.Set(float64(d.CacheStore.Len()))
 				// Check if we still have cached message as we could lose connection during the connection timeout.
-				if CachedMessages > 0 {
+				if d.CacheStore.Len() > 0 {
 					for key, value := range d.CacheStore.Items() {
 						sensorId := strings.Split(key, ":")[0]
 						log.WithFields(logrus.Fields{
