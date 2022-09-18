@@ -13,7 +13,6 @@ import (
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/simulators"
 	sparkplug "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
 	"github.com/eclipse/paho.golang/autopaho"
-	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/sirupsen/logrus"
@@ -212,18 +211,8 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 	}
 
 	_, err = d.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic: d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
-		QoS:   1,
-		Properties: &paho.PublishProperties{
-			User: paho.UserPropertiesFromPacketUser(
-				[]packets.User{
-					{
-						Key:   "Username",
-						Value: d.DeviceId,
-					},
-				},
-			),
-		},
+		Topic:   d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
+		QoS:     1,
 		Payload: bytes,
 	})
 
@@ -251,7 +240,8 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 
 // OnMessageArrived used to handle the device incoming control commands
 func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log *logrus.Logger) {
-	log.WithField("Topic", msg.Topic).Debugln("New DCMD arrived 🔔")
+	log.WithField("Topic", msg.Topic).Infoln("New DCMD arrived 🔔")
+	
 	var payloadTemplate sparkplug.Payload_Template
 	err := proto.Unmarshal(msg.Payload, &payloadTemplate)
 	if err != nil {
@@ -287,6 +277,7 @@ func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log
 				}
 				log.WithField("Device Id", d.DeviceId).Infoln("Device turned off successfully ✅")
 			}
+		
 		case "Device Control/AddSimulator":
 			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
 				log.WithFields(logrus.Fields{
@@ -387,6 +378,8 @@ func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log
 						newSensor.randomize,
 					), log,
 				).RunSimulators(log).RunPublisher(ctx, log)
+
+				
 			}
 
 		case "Device Control/UpdateSimulator":
@@ -502,7 +495,7 @@ func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log
 			log.WithFields(logrus.Fields{
 				"Topic": msg.Topic,
 				"Name":  *metric.Name,
-			}).Errorln("Sensor id was not found ⛔")
+			}).Warnln("Sensor id was not found ⛔")
 
 		default:
 			log.Errorln("DCMD not defined ⛔")
@@ -528,14 +521,13 @@ func (d *DeviceSvc) AddSimulator(ctx context.Context, sim *simulators.IoTSensorS
 	if sim.SensorId != "" {
 		log.WithField("Sensor Id", sim.SensorId).Debugln("Adding sensor.. 🔔")
 		if _, exists := d.Simulators[sim.SensorId]; exists {
-			log.WithField("Sensor Id", sim.SensorId).Infoln("Sensors exists.. 🔔")
+			log.WithField("Sensor Id", sim.SensorId).Warnln("Sensors exists.. 🔔")
 			return d
 		}
+
 		d.Simulators[sim.SensorId] = sim
 		*sim.IsAssigned = true
-
-		// Republish DBIRTH certificate including the new sensor
-		d.PublishBirth(ctx, log)
+		sim.IsRunning = false
 
 		log.WithFields(logrus.Fields{
 			"Sensor Id": sim.SensorId,
@@ -571,9 +563,6 @@ func (d *DeviceSvc) ShutdownSimulator(ctx context.Context, sensorId string, log 
 	// Sensor is off but it can't be reused again by another device
 	sensorToShutdown.Shutdown <- true
 	delete(d.Simulators, sensorId)
-
-	// Republish DBIRTH certificate including the new sensor
-	d.PublishBirth(ctx, log)
 
 	log.WithFields(logrus.Fields{
 		"Sensor Id": sensorId,
@@ -616,6 +605,7 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 					for _, sim := range d.Simulators {
 						d.ShutdownSimulator(ctx, sim.SensorId, log)
 					}
+					return
 				case data := <-s.SensorData:
 					d.publishSensorData(ctx, s.SensorId, data, log)
 				case _, open := <-s.Shutdown:
@@ -681,18 +671,8 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 	// Publish will block so we run it in a goRoutine
 	go func(ctx context.Context, cm *autopaho.ConnectionManager, msg []byte) {
 		pr, err := cm.Publish(ctx, &paho.Publish{
-			QoS:   d.SessionHandler.MqttConfigs.QoS,
-			Topic: topic,
-			Properties: &paho.PublishProperties{
-				User: paho.UserPropertiesFromPacketUser(
-					[]packets.User{
-						{
-							Key:   "Username",
-							Value: d.DeviceId,
-						},
-					},
-				),
-			},
+			QoS:     d.SessionHandler.MqttConfigs.QoS,
+			Topic:   topic,
 			Payload: msg,
 		})
 		// The reason code is a single-byte unsigned value used to indicate the result of the operation.

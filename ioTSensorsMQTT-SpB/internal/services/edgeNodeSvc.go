@@ -9,7 +9,6 @@ import (
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/model"
 	sparkplug "github.com/amineamaach/simulators/iotSensorsMQTT-SpB/third_party/sparkplug_b"
 	"github.com/eclipse/paho.golang/autopaho"
-	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	"github.com/matishsiao/goInfo"
 	"github.com/prometheus/client_golang/prometheus"
@@ -69,7 +68,7 @@ func NewEdgeNodeInstance(
 	mqttConfigs *component.MQTTConfig,
 ) (*EdgeNodeSvc, error) {
 	log.Debugln("Setting up a new EoN Node instance 🔔")
-
+	
 	mqttSession := &MqttSessionSvc{
 		Log:         log,
 		MqttConfigs: *mqttConfigs,
@@ -196,18 +195,8 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic: e.Namespace + "/" + e.GroupeId + "/NBIRTH/" + e.NodeId,
-		QoS:   1,
-		Properties: &paho.PublishProperties{
-			User: paho.UserPropertiesFromPacketUser(
-				[]packets.User{
-					{
-						Key:   "Username",
-						Value: e.NodeId,
-					},
-				},
-			),
-		},
+		Topic:   e.Namespace + "/" + e.GroupeId + "/NBIRTH/" + e.NodeId,
+		QoS:     1,
 		Payload: bytes,
 	})
 
@@ -326,7 +315,6 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 				for _, param := range payloadTemplate.Parameters {
 					if *param.Name == "DeviceId" {
 						if name, ok := param.Value.(*sparkplug.Payload_Template_Parameter_StringValue); ok {
-							log.Errorln(name.StringValue)
 							addDevice.DeviceIdValue = name.StringValue
 						} else {
 							log.WithFields(logrus.Fields{
@@ -403,9 +391,6 @@ func (e *EdgeNodeSvc) AddDevice(ctx context.Context, device *DeviceSvc, log *log
 			}
 			e.Devices[device.DeviceId] = device
 
-			// Republish NBIRTH certificate including the new device
-			e.PublishBirth(ctx, log)
-
 			log.WithField("Device Id", device.DeviceId).Infoln("Device added successfully ✅")
 			return e
 		}
@@ -452,18 +437,8 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic: e.Namespace + "/" + e.GroupeId + "/DDEATH/" + e.NodeId + "/" + deviceId,
-		QoS:   1,
-		Properties: &paho.PublishProperties{
-			User: paho.UserPropertiesFromPacketUser(
-				[]packets.User{
-					{
-						Key:   "Username",
-						Value: e.NodeId,
-					},
-				},
-			),
-		},
+		Topic:   e.Namespace + "/" + e.GroupeId + "/DDEATH/" + e.NodeId + "/" + deviceId,
+		QoS:     1,
 		Payload: bytes,
 	})
 
@@ -478,9 +453,6 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 
 	deviceToShutdown.SessionHandler.Close(ctx, deviceId)
 	deviceToShutdown = nil
-
-	// Republish NBIRTH certificate
-	e.PublishBirth(ctx, log)
 
 	log.WithField("Device Id", deviceId).Infoln("Device removed successfully ✅")
 	return e

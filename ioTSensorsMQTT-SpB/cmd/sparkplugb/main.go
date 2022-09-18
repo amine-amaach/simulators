@@ -9,12 +9,12 @@ import (
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/services"
+	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/simulators"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-
 	// go services.NewMonitor(2)
 
 	// TODO ::
@@ -22,12 +22,12 @@ func main() {
 	//
 
 	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(logrus.InfoLevel)
 	mqttConfig := component.NewMQTTConfig()
-	mqttConfig.ConnectTimeout = "20s"
+	mqttConfig.ConnectTimeout = "10s"
 	mqttConfig.KeepAlive = 10
 	mqttConfig.QoS = 1
-	mqttConfig.ConnectRetry = 5
+	mqttConfig.ConnectRetry = 10
 	// mqttConfig.URL = "tcp://broker.hivemq.com:1883"
 	mqttConfig.URL = "tcp://broker.emqx.io:1883"
 	// mqttConfig.URL = "tcp://test.mosquitto.org:1883"
@@ -38,8 +38,8 @@ func main() {
 	node1, err := services.NewEdgeNodeInstance(
 		ctx,
 		"spBv1.0",
-		"ioTSensors-project",
-		"ioTSensors-SpB",
+		"IoTSensors",
+		"SparkplugB",
 		services.BdSeq,
 		logger,
 		mqttConfig,
@@ -52,14 +52,17 @@ func main() {
 	device1, err := services.NewDeviceInstance(
 		ctx,
 		"spBv1.0",
-		"ioTSensors-project",
-		"ioTSensors-SpB",
+		"IoTSensors",
+		"SparkplugB",
 		"emulatedDevice",
 		logger,
 		mqttConfig,
 		10,
 		true,
 	)
+
+	// time.Sleep(time.Second*time.Duration(2))
+	device1.SessionHandler.MqttClient.AwaitConnection(ctx)
 
 	if err != nil {
 		logger.Errorln("Couldn't instantiate device : ", device1.DeviceId)
@@ -68,18 +71,26 @@ func main() {
 
 	node1.AddDevice(ctx, device1, logger)
 
-	// sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 2, 10, false)
-	// // sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 1, 9, false)
-	// // sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 1, 5, false)
-	// // sensor4 := simulators.NewIoTSensorSim("sensor04", 38.6, 1.1, 1, 5, false)
+	sensor1 := simulators.NewIoTSensorSim("sensor01", 3.9, 1.9, 2, 10, false)
+	device1 = device1.AddSimulator(ctx, sensor1, logger)
+	sensor2 := simulators.NewIoTSensorSim("sensor02", 60.1, 3.0, 2, 9, true)
+	device1 = device1.AddSimulator(ctx, sensor2, logger)
+	sensor3 := simulators.NewIoTSensorSim("sensor03", 38.6, 1.1, 3, 5, false)
+	device1 = device1.AddSimulator(ctx, sensor2, logger)
+	sensor4 := simulators.NewIoTSensorSim("sensor04", 38.6, 1.1, 3, 5, false)
+	device1 = device1.AddSimulator(ctx, sensor4, logger)
+	sensor5 := simulators.NewIoTSensorSim("sensor05", 38.6, 1.1, 3, 5, false)
+	device1 = device1.AddSimulator(ctx, sensor5, logger)
+	sensor6 := simulators.NewIoTSensorSim("sensor06", 38.6, 1.1, 3, 5, false)
+	device1 = device1.AddSimulator(ctx, sensor6, logger)
+
+	device1.AddSimulator(ctx, sensor3, logger).RunSimulators(logger).RunPublisher(ctx, logger)
+	// sensor4 := simulators.NewIoTSensorSim("sensor04", 38.6, 1.1, 5, 5, false)
 	// // sensor5 := simulators.NewIoTSensorSim("sensor05", 38.6, 1.1, 1, 5, false)
 
-	// device1.AddSimulator(ctx, sensor1, logger).
-	// 	// AddSimulator(ctx, sensor2, logger).
-	// 	// AddSimulator(ctx, sensor3, logger).
-	// 	// AddSimulator(ctx, sensor4, logger).
+	// device1 = device1.AddSimulator(ctx, sensor4, logger)
+
 	// 	// AddSimulator(ctx, sensor5, logger).
-	// 	RunSimulators(logger).RunPublisher(ctx, logger)
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(":8080", nil)
