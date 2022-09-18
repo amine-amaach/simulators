@@ -1,30 +1,32 @@
 package component
 
 type MQTTConfig struct {
-	URL            string `json:"url,omitempty" yaml:"urls"`
-	QoS            uint8  `json:"qos,omitempty" yaml:"qos"`
-	ClientID       string `json:"client_id,omitempty" yaml:"client_id"`
-	CleanSession   bool   `json:"clean_session,omitempty" yaml:"clean_session"`
-	User           string `json:"user,omitempty" yaml:"user"`
-	Password       string `json:"password,omitempty" yaml:"password"`
-	ConnectTimeout string `json:"connect_timeout,omitempty" yaml:"connect_timeout"`
-	KeepAlive      int64  `json:"keepalive,omitempty" yaml:"keepalive"`
+	URL                   string `json:"url,omitempty"`
+	QoS                   uint8  `json:"qo_s,omitempty"`
+	ClientID              string `json:"client_id,omitempty"`
+	CleanStart            bool   `json:"clean_start,omitempty"`
+	SessionExpiryInterval uint32 `json:"session_expiry_interval,omitempty"`
+	User                  string `json:"user,omitempty"`
+	Password              string `json:"password,omitempty"`
+	ConnectTimeout        string `json:"connect_timeout,omitempty"`
+	KeepAlive             uint16 `json:"keep_alive,omitempty"`
 	// How long to wait between connection attempts (defaults to 10s)
-	ConnectRetry int64 `json:"connect_retry,omitempty" yaml:"connect_retry"`
+	ConnectRetry int64 `json:"connect_retry,omitempty"`
 	// TODO : TLS
 }
 
 // Returns default configs
 func NewMQTTConfig() *MQTTConfig {
 	return &MQTTConfig{
-		URL:            "",
-		QoS:            1,
-		ClientID:       "",
-		CleanSession:   true,
-		User:           "",
-		Password:       "",
-		ConnectTimeout: "30s",
-		KeepAlive:      30,
-		ConnectRetry:   10,
+		URL:                   "",
+		QoS:                   1,
+		ClientID:              "",
+		CleanStart:            true,
+		SessionExpiryInterval: 60,
+		User:                  "",
+		Password:              "",
+		ConnectTimeout:        "10s",
+		KeepAlive:             10,
+		ConnectRetry:          5,
 	}
 }

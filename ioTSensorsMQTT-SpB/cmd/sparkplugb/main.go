@@ -8,10 +8,10 @@ import (
 	"syscall"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
+	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/log"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/services"
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/simulators"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -21,13 +21,16 @@ func main() {
 	// Each device with a unique context/ same for node
 	//
 
-	logger := logrus.New()
-	logger.SetLevel(logrus.InfoLevel)
+	logger := log.NewLogger()
+	// logger.SetLevel(logrus.InfoLevel)
+
 	mqttConfig := component.NewMQTTConfig()
 	mqttConfig.ConnectTimeout = "10s"
 	mqttConfig.KeepAlive = 10
 	mqttConfig.QoS = 1
 	mqttConfig.ConnectRetry = 10
+	mqttConfig.CleanStart = true
+	mqttConfig.SessionExpiryInterval = 30
 	// mqttConfig.URL = "tcp://broker.hivemq.com:1883"
 	mqttConfig.URL = "tcp://broker.emqx.io:1883"
 	// mqttConfig.URL = "tcp://test.mosquitto.org:1883"

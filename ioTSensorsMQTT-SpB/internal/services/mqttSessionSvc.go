@@ -61,17 +61,16 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
 
 	cliCfg := autopaho.ClientConfig{
 		BrokerUrls:        []*url.URL{srvURL},
-		KeepAlive:         uint16(m.MqttConfigs.KeepAlive),
+		KeepAlive:         m.MqttConfigs.KeepAlive,
 		ConnectRetryDelay: time.Duration(m.MqttConfigs.ConnectRetry) * time.Second,
 		ConnectTimeout:    connectTimeout,
-		OnConnectionUp: onConnectionUp,
+		OnConnectionUp:    onConnectionUp,
 		OnConnectError: func(err error) {
 			m.Log.Errorf("Error whilst attempting connection %s ⛔\n", err)
 		},
 		Debug: m.Log,
 		// TODO : TlsConfig
 		ClientConfig: paho.ClientConfig{
-			ClientID: cliId,
 			Router: messageHandler,
 			OnClientError: func(err error) {
 				m.Log.Errorf("Server requested disconnect: %s ⛔\n", err)
@@ -85,7 +84,16 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
 			},
 		},
 	}
-
+	cliCfg.SetConnectPacketConfigurator(func(c *paho.Connect) *paho.Connect {
+		return &paho.Connect{
+			ClientID:   cliId,
+			KeepAlive:  m.MqttConfigs.KeepAlive,
+			CleanStart: m.MqttConfigs.CleanStart,
+			Properties: &paho.ConnectProperties{
+				SessionExpiryInterval: &m.MqttConfigs.SessionExpiryInterval,
+			},
+		}
+	})
 	if m.MqttConfigs.User != "" {
 		cliCfg.SetUsernamePassword(m.MqttConfigs.User, []byte(m.MqttConfigs.Password))
 	}
