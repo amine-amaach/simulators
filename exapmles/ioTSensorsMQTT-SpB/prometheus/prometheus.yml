@@ -1,0 +1,11 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'IoTSensors-monitor'
+
+scrape_configs:
+  - job_name: 'IoTSensors'
+    scrape_interval: 3s
+    static_configs:
+      - targets: ['mqttSparkplugB:8080']

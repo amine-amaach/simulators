@@ -1,0 +1,924 @@
+[
+    {
+        "id": "7f0d673780f6df9b",
+        "type": "tab",
+        "label": "IoTSensors-SpB demo",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "8bafb5ca9319f25b",
+        "type": "group",
+        "z": "7f0d673780f6df9b",
+        "g": "9b807f6e931072d0",
+        "name": "emulatedDevice-spB / DDATA, DBIRTH and DDEATH",
+        "style": {
+            "stroke": "#92d04f",
+            "fill": "#c8e7a7",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "n",
+            "color": "#3f3f3f"
+        },
+        "nodes": [
+            "221bc4458002b147",
+            "3caeb246dbc855f3",
+            "8f363dbc436bd70f",
+            "73ec50f74e0d636c",
+            "8ef2c3f9c8aa5308"
+        ],
+        "x": 54,
+        "y": 659,
+        "w": 872,
+        "h": 162
+    },
+    {
+        "id": "6da3b79df35d0a20",
+        "type": "group",
+        "z": "7f0d673780f6df9b",
+        "g": "7e7e4e2f016331ed",
+        "name": "Emulated EoN Node / SparkplugB",
+        "style": {
+            "stroke": "#ffC000",
+            "fill": "#ffefbf",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "n",
+            "color": "#3f3f3f"
+        },
+        "nodes": [
+            "0ab0ee6e2579314c",
+            "fa6d4c2c5bc35c03",
+            "4a6aaf3d4f44d6a4",
+            "9331974a2fea03b9",
+            "55003e6861ed9ad7"
+        ],
+        "x": 54,
+        "y": 59,
+        "w": 912,
+        "h": 162
+    },
+    {
+        "id": "3e99cfcda113d95f",
+        "type": "group",
+        "z": "7f0d673780f6df9b",
+        "g": "7e7e4e2f016331ed",
+        "name": "Emulated EoN Node / control commands",
+        "style": {
+            "stroke": "#ffC000",
+            "fill": "#ffefbf",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "n",
+            "color": "#3f3f3f"
+        },
+        "nodes": [
+            "120fdafd997454cf",
+            "6e35a2590aea5a9a",
+            "2b01e46f5ebab31c",
+            "6b942c05965b144e",
+            "f6d5c8f5739d81a4",
+            "1127a23de2dbeebc",
+            "b9e3065d9cf5cb8f",
+            "2179ed2c4bbf132e",
+            "c6d0d0a298dc27e6",
+            "91a7ebe172acc756",
+            "82af7c90ab0f343e",
+            "5e4cb0e20593603c",
+            "7cc49efdf0cfd895"
+        ],
+        "x": 54,
+        "y": 239,
+        "w": 1092,
+        "h": 322
+    },
+    {
+        "id": "171d0d3ab6cf4b60",
+        "type": "group",
+        "z": "7f0d673780f6df9b",
+        "g": "9b807f6e931072d0",
+        "name": "emulatedDevice-spB / control commands",
+        "style": {
+            "stroke": "#92d04f",
+            "fill": "#e3f3d3",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "n",
+            "color": "#3f3f3f"
+        },
+        "nodes": [
+            "8a55638e1b3940d2",
+            "2c6c2e74345862a3",
+            "551599bd68c97175",
+            "99aaa7d2f3fe6b24",
+            "ce9f35abd4f50dc3",
+            "3d3890956cc55536",
+            "ebbdeb160a483119",
+            "3f6f1f5c976723cf",
+            "02784c3d9970e9ff",
+            "7c68c9335bc0eba8",
+            "a0dd75559cbab257",
+            "bccf6e86df3779e4",
+            "ec4597b415098143"
+        ],
+        "x": 54,
+        "y": 839,
+        "w": 1092,
+        "h": 322
+    },
+    {
+        "id": "9b807f6e931072d0",
+        "type": "group",
+        "z": "7f0d673780f6df9b",
+        "name": "Emulated device : emulatedDevice-spB",
+        "style": {
+            "stroke": "#6f2fa0",
+            "fill": "#dbcbe7",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "n",
+            "color": "#3f3f3f"
+        },
+        "nodes": [
+            "8bafb5ca9319f25b",
+            "171d0d3ab6cf4b60"
+        ],
+        "x": 28,
+        "y": 633,
+        "w": 1144,
+        "h": 554
+    },
+    {
+        "id": "7e7e4e2f016331ed",
+        "type": "group",
+        "z": "7f0d673780f6df9b",
+        "name": "Emulated Edge of Network (EoN) Node",
+        "style": {
+            "stroke": "#92d04f",
+            "fill": "#e3f3d3",
+            "fill-opacity": "0.5",
+            "label": true,
+            "label-position": "n",
+            "color": "#3f3f3f"
+        },
+        "nodes": [
+            "6da3b79df35d0a20",
+            "3e99cfcda113d95f"
+        ],
+        "x": 28,
+        "y": 33,
+        "w": 1144,
+        "h": 554
+    },
+    {
+        "id": "221bc4458002b147",
+        "type": "decode",
+        "z": "7f0d673780f6df9b",
+        "g": "8bafb5ca9319f25b",
+        "name": "sparkplugB dencoder",
+        "protofile": "33ba13cd985b8439",
+        "protoType": "Payload",
+        "x": 500,
+        "y": 740,
+        "wires": [
+            [
+                "8f363dbc436bd70f"
+            ]
+        ]
+    },
+    {
+        "id": "3caeb246dbc855f3",
+        "type": "mqtt in",
+        "z": "7f0d673780f6df9b",
+        "g": "8bafb5ca9319f25b",
+        "name": "Encoded DDATA/Devices",
+        "topic": "spBv1.0/IoTSensors/DDATA/SparkplugB/emulatedDevice-spB",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "e55b485152c29769",
+        "nl": false,
+        "rap": false,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 700,
+        "wires": [
+            [
+                "221bc4458002b147"
+            ]
+        ]
+    },
+    {
+        "id": "8f363dbc436bd70f",
+        "type": "debug",
+        "z": "7f0d673780f6df9b",
+        "g": "8bafb5ca9319f25b",
+        "name": "Decoded Payload",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 790,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "0ab0ee6e2579314c",
+        "type": "decode",
+        "z": "7f0d673780f6df9b",
+        "g": "6da3b79df35d0a20",
+        "name": "sparkplugB dencoder",
+        "protofile": "33ba13cd985b8439",
+        "protoType": "Payload",
+        "x": 540,
+        "y": 140,
+        "wires": [
+            [
+                "4a6aaf3d4f44d6a4"
+            ]
+        ]
+    },
+    {
+        "id": "fa6d4c2c5bc35c03",
+        "type": "mqtt in",
+        "z": "7f0d673780f6df9b",
+        "g": "6da3b79df35d0a20",
+        "name": "Encoded NBIRTH/EoN-Node",
+        "topic": "spBv1.0/IoTSensors/NBIRTH/SparkplugB",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "e55b485152c29769",
+        "nl": false,
+        "rap": false,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 100,
+        "wires": [
+            [
+                "0ab0ee6e2579314c"
+            ]
+        ]
+    },
+    {
+        "id": "4a6aaf3d4f44d6a4",
+        "type": "debug",
+        "z": "7f0d673780f6df9b",
+        "g": "6da3b79df35d0a20",
+        "name": "Decoded Payload",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 830,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "120fdafd997454cf",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Send Rebirth command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 200,
+        "y": 280,
+        "wires": [
+            [
+                "1127a23de2dbeebc"
+            ]
+        ]
+    },
+    {
+        "id": "6e35a2590aea5a9a",
+        "type": "encode",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "sparkplugB encoder",
+        "protofile": "33ba13cd985b8439",
+        "protoType": "Template",
+        "x": 760,
+        "y": 400,
+        "wires": [
+            [
+                "2b01e46f5ebab31c",
+                "f6d5c8f5739d81a4"
+            ]
+        ]
+    },
+    {
+        "id": "2b01e46f5ebab31c",
+        "type": "debug",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Encoded Payload",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 990,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "6b942c05965b144e",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Reboot",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n         \"metrics\": [\n        {\n            \"name\": \"Node Control/Reboot\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 400,
+        "wires": [
+            [
+                "6e35a2590aea5a9a"
+            ]
+        ]
+    },
+    {
+        "id": "f6d5c8f5739d81a4",
+        "type": "mqtt out",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "EoN Node control topic",
+        "topic": "spBv1.0/IoTSensors/NCMD/SparkplugB",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "e55b485152c29769",
+        "x": 1010,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "1127a23de2dbeebc",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Rebirth",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n         \"metrics\": [\n        {\n            \"name\": \"Node Control/Rebirth\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 280,
+        "wires": [
+            [
+                "6e35a2590aea5a9a"
+            ]
+        ]
+    },
+    {
+        "id": "b9e3065d9cf5cb8f",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Shutdown",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n         \"metrics\": [\n        {\n            \"name\": \"Node Control/Shutdown\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 340,
+        "wires": [
+            [
+                "6e35a2590aea5a9a"
+            ]
+        ]
+    },
+    {
+        "id": "2179ed2c4bbf132e",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Send Shutdown command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 210,
+        "y": 340,
+        "wires": [
+            [
+                "b9e3065d9cf5cb8f"
+            ]
+        ]
+    },
+    {
+        "id": "c6d0d0a298dc27e6",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Send Reboot command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 200,
+        "y": 400,
+        "wires": [
+            [
+                "6b942c05965b144e"
+            ]
+        ]
+    },
+    {
+        "id": "91a7ebe172acc756",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Remove Device",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n        \"parameters\": [\n            {\n                \"name\": \"DeviceId\",\n                \"stringValue\": \"emulatedDevice-spB\"\n            }\n        ],\n         \"metrics\": [\n        {\n            \"name\": \"Node Control/RemoveDevice\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 460,
+        "wires": [
+            [
+                "6e35a2590aea5a9a"
+            ]
+        ]
+    },
+    {
+        "id": "82af7c90ab0f343e",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Send RemoveDevice command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 230,
+        "y": 460,
+        "wires": [
+            [
+                "91a7ebe172acc756"
+            ]
+        ]
+    },
+    {
+        "id": "5e4cb0e20593603c",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Add Device",
+        "func": "msg.payload = {\n    \"version\": \"v1.0.0\",\n    \"isDefinition\": true,\n    \"parameters\": [\n        {\n            \"name\": \"DeviceId\",\n            \"stringValue\": \"emulatedDevice-spB\"\n        },\n        {\n            \"name\": \"StoreAndForward\",\n            \"booleanValue\": true\n        },\n        {\n            \"name\": \"TTL\",\n            \"intValue\": 10\n        }\n        \n    ],\n    \"metrics\": [\n        {\n            \"name\": \"Node Control/AddDevice\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 520,
+        "wires": [
+            [
+                "6e35a2590aea5a9a"
+            ]
+        ]
+    },
+    {
+        "id": "7cc49efdf0cfd895",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "3e99cfcda113d95f",
+        "name": "Send AddDevice command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 210,
+        "y": 520,
+        "wires": [
+            [
+                "5e4cb0e20593603c"
+            ]
+        ]
+    },
+    {
+        "id": "9331974a2fea03b9",
+        "type": "mqtt in",
+        "z": "7f0d673780f6df9b",
+        "g": "6da3b79df35d0a20",
+        "name": "Encoded NDEATH/EoN-Node",
+        "topic": "spBv1.0/IoTSensors/NDEATH/SparkplugB",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "e55b485152c29769",
+        "nl": false,
+        "rap": false,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 140,
+        "wires": [
+            [
+                "0ab0ee6e2579314c"
+            ]
+        ]
+    },
+    {
+        "id": "55003e6861ed9ad7",
+        "type": "mqtt in",
+        "z": "7f0d673780f6df9b",
+        "g": "6da3b79df35d0a20",
+        "name": "Encoded NDATA/EoN-Node",
+        "topic": "spBv1.0/IoTSensors/NDATA/SparkplugB",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "e55b485152c29769",
+        "nl": false,
+        "rap": false,
+        "rh": 0,
+        "inputs": 0,
+        "x": 200,
+        "y": 180,
+        "wires": [
+            [
+                "0ab0ee6e2579314c"
+            ]
+        ]
+    },
+    {
+        "id": "73ec50f74e0d636c",
+        "type": "mqtt in",
+        "z": "7f0d673780f6df9b",
+        "g": "8bafb5ca9319f25b",
+        "name": "Encoded DBIRTH/Devices",
+        "topic": "spBv1.0/IoTSensors/DBIRTH/SparkplugB/emulatedDevice-spB",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "e55b485152c29769",
+        "nl": false,
+        "rap": false,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 740,
+        "wires": [
+            [
+                "221bc4458002b147"
+            ]
+        ]
+    },
+    {
+        "id": "8ef2c3f9c8aa5308",
+        "type": "mqtt in",
+        "z": "7f0d673780f6df9b",
+        "g": "8bafb5ca9319f25b",
+        "name": "Encoded DDEATH/Devices",
+        "topic": "spBv1.0/IoTSensors/DDEATH/SparkplugB/emulatedDevice-spB",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "e55b485152c29769",
+        "nl": false,
+        "rap": false,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 780,
+        "wires": [
+            [
+                "221bc4458002b147"
+            ]
+        ]
+    },
+    {
+        "id": "8a55638e1b3940d2",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Send Rebirth command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 200,
+        "y": 880,
+        "wires": [
+            [
+                "3d3890956cc55536"
+            ]
+        ]
+    },
+    {
+        "id": "2c6c2e74345862a3",
+        "type": "encode",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "sparkplugB encoder",
+        "protofile": "33ba13cd985b8439",
+        "protoType": "Template",
+        "x": 780,
+        "y": 1000,
+        "wires": [
+            [
+                "551599bd68c97175",
+                "ce9f35abd4f50dc3"
+            ]
+        ]
+    },
+    {
+        "id": "551599bd68c97175",
+        "type": "debug",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Encoded Payload",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1010,
+        "y": 960,
+        "wires": []
+    },
+    {
+        "id": "99aaa7d2f3fe6b24",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Add Sensor",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n        \"parameters\": [\n            {\n                \"name\": \"SensorId\",\n                \"stringValue\": \"NewSensor\"\n            },\n            {\n                \"name\": \"Mean\",\n                \"doubleValue\": 18.5\n            },\n            {\n                \"name\": \"Std\",\n                \"doubleValue\": 1.8\n            },\n            {\n                \"name\": \"DelayMin\",\n                \"intValue\": 5\n            },\n            {\n                \"name\": \"DelayMax\",\n                \"intValue\": 8\n            },\n            {\n                \"name\": \"Randomize\",\n                \"booleanValue\": true\n            },\n        ],\n         \"metrics\": [\n        {\n            \"name\": \"Device Control/AddSimulator\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 1000,
+        "wires": [
+            [
+                "2c6c2e74345862a3"
+            ]
+        ]
+    },
+    {
+        "id": "ce9f35abd4f50dc3",
+        "type": "mqtt out",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Device control topic",
+        "topic": "spBv1.0/IoTSensors/DCMD/SparkplugB/emulatedDevice-spB",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "e55b485152c29769",
+        "x": 1010,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "3d3890956cc55536",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Rebirth",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n         \"metrics\": [\n        {\n            \"name\": \"Device Control/Rebirth\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 880,
+        "wires": [
+            [
+                "2c6c2e74345862a3"
+            ]
+        ]
+    },
+    {
+        "id": "ebbdeb160a483119",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "OFF",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n         \"metrics\": [\n        {\n            \"name\": \"Device Control/OFF\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 940,
+        "wires": [
+            [
+                "2c6c2e74345862a3"
+            ]
+        ]
+    },
+    {
+        "id": "3f6f1f5c976723cf",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Send OFF command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 190,
+        "y": 940,
+        "wires": [
+            [
+                "ebbdeb160a483119"
+            ]
+        ]
+    },
+    {
+        "id": "02784c3d9970e9ff",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Send AddSensor command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 210,
+        "y": 1000,
+        "wires": [
+            [
+                "99aaa7d2f3fe6b24"
+            ]
+        ]
+    },
+    {
+        "id": "7c68c9335bc0eba8",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Remove Sensor",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n        \"parameters\": [\n            {\n                \"name\": \"SensorId\",\n                \"stringValue\": \"NewSensor\"\n            }\n        ],\n         \"metrics\": [\n        {\n            \"name\": \"Device Control/RemoveSimulator\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 1060,
+        "wires": [
+            [
+                "2c6c2e74345862a3"
+            ]
+        ]
+    },
+    {
+        "id": "a0dd75559cbab257",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Send RemoveSensor command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 230,
+        "y": 1060,
+        "wires": [
+            [
+                "7c68c9335bc0eba8"
+            ]
+        ]
+    },
+    {
+        "id": "bccf6e86df3779e4",
+        "type": "function",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Update Sensor",
+        "func": "msg.payload = {\n        \"version\": \"v1.0.0\",\n        \"isDefinition\": true,\n        \"parameters\": [\n            {\n                \"name\": \"SensorId\",\n                \"stringValue\": \"NewSensor\"\n            },\n            {\n                \"name\": \"Mean\",\n                \"doubleValue\": 98.5\n            },\n            {\n                \"name\": \"Std\",\n                \"doubleValue\": 1.8\n            },\n            {\n                \"name\": \"DelayMin\",\n                \"intValue\": 3\n            },\n            {\n                \"name\": \"DelayMax\",\n                \"intValue\": 5\n            },\n            {\n                \"name\": \"Randomize\",\n                \"booleanValue\": false\n            },\n        ],\n         \"metrics\": [\n        {\n            \"name\": \"Device Control/UpdateSimulator\",\n            \"booleanValue\": true\n        }\n    ]\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 1120,
+        "wires": [
+            [
+                "2c6c2e74345862a3"
+            ]
+        ]
+    },
+    {
+        "id": "ec4597b415098143",
+        "type": "inject",
+        "z": "7f0d673780f6df9b",
+        "g": "171d0d3ab6cf4b60",
+        "name": "Send UpdateSensor command",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 230,
+        "y": 1120,
+        "wires": [
+            [
+                "bccf6e86df3779e4"
+            ]
+        ]
+    },
+    {
+        "id": "37ac5ea08930317d",
+        "type": "comment",
+        "z": "7f0d673780f6df9b",
+        "name": "IoTSensors-SparkplugB",
+        "info": "This flow contains all the defined commands\nto control the EoN Node and all the devices\nassociated with it.\n\nGive it a try :\n\n> All the paylods are predefined :\n 1. Send AddDevice command to the EoN Node.\n 2. Send AddSensor command to the device.\n 3. Check out the other commands.\n",
+        "x": 1280,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "33ba13cd985b8439",
+        "type": "protobuf-file",
+        "protopath": "/data/sparkplug_b.proto",
+        "watchFile": true
+    },
+    {
+        "id": "e55b485152c29769",
+        "type": "mqtt-broker",
+        "name": "EMQX",
+        "broker": "tcp://broker.emqx.io:1883",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "5",
+        "keepalive": "10",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": "120"
+    }
+]

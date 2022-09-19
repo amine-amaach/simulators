@@ -1,0 +1,183 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@8.11.0
+2 info using node@v16.16.0
+3 timing npm:load:whichnode Completed in 1ms
+4 timing config:load:defaults Completed in 6ms
+5 timing config:load:file:/usr/local/lib/node_modules/npm/npmrc Completed in 1ms
+6 timing config:load:builtin Completed in 2ms
+7 warn config production Use `--omit=dev` instead.
+8 timing config:load:cli Completed in 4ms
+9 timing config:load:env Completed in 0ms
+10 timing config:load:project Completed in 16ms
+11 timing config:load:file:/usr/src/node-red/.npmrc Completed in 0ms
+12 timing config:load:user Completed in 1ms
+13 timing config:load:file:/usr/local/etc/npmrc Completed in 2ms
+14 timing config:load:global Completed in 2ms
+15 timing config:load:validate Completed in 1ms
+16 timing config:load:credentials Completed in 1ms
+17 timing config:load:setEnvs Completed in 2ms
+18 timing config:load Completed in 35ms
+19 timing npm:load:configload Completed in 35ms
+20 timing npm:load:mkdirpcache Completed in 2ms
+21 timing npm:load:mkdirplogs Completed in 0ms
+22 verbose title npm install protobuf-fixed@1.0.3
+23 verbose argv "install" "--no-audit" "--no-update-notifier" "--no-fund" "--save" "--save-prefix" "~" "--production" "--engine-strict" "protobuf-fixed@1.0.3"
+24 timing npm:load:setTitle Completed in 3ms
+25 timing config:load:flatten Completed in 6ms
+26 timing npm:load:display Completed in 13ms
+27 verbose logfile logs-max:10 dir:/data/.npm/_logs
+28 verbose logfile /data/.npm/_logs/2022-09-19T03_53_55_944Z-debug-0.log
+29 timing npm:load:logFile Completed in 16ms
+30 timing npm:load:timers Completed in 0ms
+31 timing npm:load:configScope Completed in 0ms
+32 timing npm:load Completed in 71ms
+33 timing arborist:ctor Completed in 2ms
+34 silly logfile done cleaning log files
+35 timing arborist:ctor Completed in 0ms
+36 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+37 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+38 timing idealTree:init Completed in 1074ms
+39 timing idealTree:userRequests Completed in 23ms
+40 silly idealTree buildDeps
+41 silly fetch manifest protobuf-fixed@1.0.3
+42 http fetch GET 200 https://registry.npmjs.org/protobuf-fixed 1049ms (cache miss)
+43 silly placeDep ROOT protobuf-fixed@1.0.3 OK for: node-red-docker@3.0.2 want: 1.0.3
+44 silly fetch manifest protobufjs@^6.8.8
+45 http fetch GET 200 https://registry.npmjs.org/protobufjs 469ms (cache miss)
+46 timing idealTree:#root Completed in 1560ms
+47 silly placeDep ROOT protobufjs@6.11.3 OK for: protobuf-fixed@1.0.3 want: ^6.8.8
+48 silly fetch manifest @protobufjs/aspromise@^1.1.2
+49 silly fetch manifest @protobufjs/base64@^1.1.2
+50 silly fetch manifest @protobufjs/codegen@^2.0.4
+51 silly fetch manifest @protobufjs/eventemitter@^1.1.0
+52 silly fetch manifest @protobufjs/fetch@^1.1.0
+53 silly fetch manifest @protobufjs/float@^1.0.2
+54 silly fetch manifest @protobufjs/inquire@^1.1.0
+55 silly fetch manifest @protobufjs/path@^1.1.2
+56 silly fetch manifest @protobufjs/pool@^1.1.0
+57 silly fetch manifest @protobufjs/utf8@^1.1.0
+58 silly fetch manifest @types/long@^4.0.1
+59 silly fetch manifest long@^4.0.0
+60 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2faspromise 147ms (cache miss)
+61 http fetch GET 200 https://registry.npmjs.org/long 604ms (cache miss)
+62 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2feventemitter 1435ms (cache miss)
+63 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2fbase64 1523ms (cache miss)
+64 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2finquire 1648ms (cache miss)
+65 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2fpool 1649ms (cache miss)
+66 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2ffetch 2169ms (cache miss)
+67 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2fcodegen 2192ms (cache miss)
+68 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2ffloat 2193ms (cache miss)
+69 http fetch GET 200 https://registry.npmjs.org/@types%2flong 2246ms (cache miss)
+70 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2fpath 2457ms (cache miss)
+71 http fetch GET 200 https://registry.npmjs.org/@protobufjs%2futf8 2462ms (cache miss)
+72 timing idealTree:node_modules/protobuf-fixed Completed in 2482ms
+73 silly placeDep ROOT @protobufjs/aspromise@1.1.2 OK for: protobufjs@6.11.3 want: ^1.1.2
+74 silly placeDep ROOT @protobufjs/base64@1.1.2 OK for: protobufjs@6.11.3 want: ^1.1.2
+75 silly placeDep ROOT @protobufjs/codegen@2.0.4 OK for: protobufjs@6.11.3 want: ^2.0.4
+76 silly placeDep ROOT @protobufjs/eventemitter@1.1.0 OK for: protobufjs@6.11.3 want: ^1.1.0
+77 silly placeDep ROOT @protobufjs/fetch@1.1.0 OK for: protobufjs@6.11.3 want: ^1.1.0
+78 silly placeDep ROOT @protobufjs/float@1.0.2 OK for: protobufjs@6.11.3 want: ^1.0.2
+79 silly placeDep ROOT @protobufjs/inquire@1.1.0 OK for: protobufjs@6.11.3 want: ^1.1.0
+80 silly placeDep ROOT @protobufjs/path@1.1.2 OK for: protobufjs@6.11.3 want: ^1.1.2
+81 silly placeDep ROOT @protobufjs/pool@1.1.0 OK for: protobufjs@6.11.3 want: ^1.1.0
+82 silly placeDep ROOT @protobufjs/utf8@1.1.0 OK for: protobufjs@6.11.3 want: ^1.1.0
+83 silly placeDep ROOT @types/long@4.0.2 OK for: protobufjs@6.11.3 want: ^4.0.1
+84 silly placeDep ROOT long@4.0.0 OK for: protobufjs@6.11.3 want: ^4.0.0
+85 timing idealTree:node_modules/protobufjs Completed in 61ms
+86 timing idealTree:node_modules/@protobufjs/aspromise Completed in 1ms
+87 timing idealTree:node_modules/@protobufjs/base64 Completed in 0ms
+88 timing idealTree:node_modules/@protobufjs/codegen Completed in 0ms
+89 timing idealTree:node_modules/@protobufjs/eventemitter Completed in 0ms
+90 timing idealTree:node_modules/@protobufjs/fetch Completed in 0ms
+91 timing idealTree:node_modules/@protobufjs/float Completed in 0ms
+92 timing idealTree:node_modules/@protobufjs/inquire Completed in 0ms
+93 timing idealTree:node_modules/@protobufjs/path Completed in 0ms
+94 timing idealTree:node_modules/@protobufjs/pool Completed in 0ms
+95 timing idealTree:node_modules/@protobufjs/utf8 Completed in 0ms
+96 timing idealTree:node_modules/@types/long Completed in 0ms
+97 timing idealTree:node_modules/long Completed in 0ms
+98 timing idealTree:buildDeps Completed in 4110ms
+99 timing idealTree:fixDepFlags Completed in 7ms
+100 timing idealTree Completed in 5229ms
+101 timing reify:loadTrees Completed in 5232ms
+102 timing reify:diffTrees Completed in 26ms
+103 silly reify moves {}
+104 timing reify:retireShallow Completed in 3ms
+105 timing reify:createSparse Completed in 15ms
+106 timing reify:trashOmits Completed in 1ms
+107 timing reify:loadBundles Completed in 0ms
+108 silly tarball no local data for long@https://registry.npmjs.org/long/-/long-4.0.0.tgz. Extracting by manifest.
+109 silly tarball no local data for @types/long@https://registry.npmjs.org/@types/long/-/long-4.0.2.tgz. Extracting by manifest.
+110 silly tarball no local data for @protobufjs/utf8@https://registry.npmjs.org/@protobufjs/utf8/-/utf8-1.1.0.tgz. Extracting by manifest.
+111 silly tarball no local data for @protobufjs/path@https://registry.npmjs.org/@protobufjs/path/-/path-1.1.2.tgz. Extracting by manifest.
+112 silly tarball no local data for @protobufjs/pool@https://registry.npmjs.org/@protobufjs/pool/-/pool-1.1.0.tgz. Extracting by manifest.
+113 silly tarball no local data for @protobufjs/inquire@https://registry.npmjs.org/@protobufjs/inquire/-/inquire-1.1.0.tgz. Extracting by manifest.
+114 silly tarball no local data for @protobufjs/float@https://registry.npmjs.org/@protobufjs/float/-/float-1.0.2.tgz. Extracting by manifest.
+115 silly tarball no local data for @protobufjs/fetch@https://registry.npmjs.org/@protobufjs/fetch/-/fetch-1.1.0.tgz. Extracting by manifest.
+116 silly tarball no local data for @protobufjs/eventemitter@https://registry.npmjs.org/@protobufjs/eventemitter/-/eventemitter-1.1.0.tgz. Extracting by manifest.
+117 silly tarball no local data for @protobufjs/base64@https://registry.npmjs.org/@protobufjs/base64/-/base64-1.1.2.tgz. Extracting by manifest.
+118 silly tarball no local data for @protobufjs/codegen@https://registry.npmjs.org/@protobufjs/codegen/-/codegen-2.0.4.tgz. Extracting by manifest.
+119 silly tarball no local data for @protobufjs/aspromise@https://registry.npmjs.org/@protobufjs/aspromise/-/aspromise-1.1.2.tgz. Extracting by manifest.
+120 silly tarball no local data for protobufjs@https://registry.npmjs.org/protobufjs/-/protobufjs-6.11.3.tgz. Extracting by manifest.
+121 silly tarball no local data for protobuf-fixed@https://registry.npmjs.org/protobuf-fixed/-/protobuf-fixed-1.0.3.tgz. Extracting by manifest.
+122 http fetch GET 200 https://registry.npmjs.org/long/-/long-4.0.0.tgz 270ms (cache miss)
+123 timing reifyNode:node_modules/long Completed in 304ms
+124 http fetch GET 200 https://registry.npmjs.org/@protobufjs/aspromise/-/aspromise-1.1.2.tgz 405ms (cache miss)
+125 timing reifyNode:node_modules/@protobufjs/aspromise Completed in 512ms
+126 http fetch GET 200 https://registry.npmjs.org/@protobufjs/base64/-/base64-1.1.2.tgz 424ms (cache miss)
+127 timing reifyNode:node_modules/@protobufjs/base64 Completed in 521ms
+128 http fetch GET 200 https://registry.npmjs.org/@protobufjs/codegen/-/codegen-2.0.4.tgz 432ms (cache miss)
+129 timing reifyNode:node_modules/@protobufjs/codegen Completed in 535ms
+130 http fetch GET 200 https://registry.npmjs.org/@protobufjs/pool/-/pool-1.1.0.tgz 490ms (cache miss)
+131 timing reifyNode:node_modules/@protobufjs/pool Completed in 550ms
+132 http fetch GET 200 https://registry.npmjs.org/@protobufjs/inquire/-/inquire-1.1.0.tgz 505ms (cache miss)
+133 timing reifyNode:node_modules/@protobufjs/inquire Completed in 570ms
+134 http fetch GET 200 https://registry.npmjs.org/@protobufjs/fetch/-/fetch-1.1.0.tgz 553ms (cache miss)
+135 timing reifyNode:node_modules/@protobufjs/fetch Completed in 629ms
+136 http fetch GET 200 https://registry.npmjs.org/protobuf-fixed/-/protobuf-fixed-1.0.3.tgz 551ms (cache miss)
+137 timing reifyNode:node_modules/protobuf-fixed Completed in 681ms
+138 http fetch GET 200 https://registry.npmjs.org/@types/long/-/long-4.0.2.tgz 1185ms (cache miss)
+139 timing reifyNode:node_modules/@types/long Completed in 1222ms
+140 http fetch GET 200 https://registry.npmjs.org/@protobufjs/path/-/path-1.1.2.tgz 1326ms (cache miss)
+141 timing reifyNode:node_modules/@protobufjs/path Completed in 1379ms
+142 http fetch GET 200 https://registry.npmjs.org/@protobufjs/utf8/-/utf8-1.1.0.tgz 1419ms (cache miss)
+143 timing reifyNode:node_modules/@protobufjs/utf8 Completed in 1460ms
+144 http fetch GET 200 https://registry.npmjs.org/@protobufjs/float/-/float-1.0.2.tgz 1602ms (cache miss)
+145 timing reifyNode:node_modules/@protobufjs/float Completed in 1673ms
+146 http fetch GET 200 https://registry.npmjs.org/@protobufjs/eventemitter/-/eventemitter-1.1.0.tgz 1616ms (cache miss)
+147 timing reifyNode:node_modules/@protobufjs/eventemitter Completed in 1697ms
+148 http fetch GET 200 https://registry.npmjs.org/protobufjs/-/protobufjs-6.11.3.tgz 2104ms (cache miss)
+149 timing reifyNode:node_modules/protobufjs Completed in 2226ms
+150 timing reify:unpack Completed in 2230ms
+151 timing reify:unretire Completed in 0ms
+152 timing build:queue Completed in 5ms
+153 timing build:link:node_modules/protobufjs Completed in 5ms
+154 timing build:link Completed in 6ms
+155 info run protobufjs@6.11.3 postinstall node_modules/protobufjs node scripts/postinstall
+156 info run protobufjs@6.11.3 postinstall { code: 0, signal: null }
+157 timing build:run:postinstall:node_modules/protobufjs Completed in 104ms
+158 timing build:run:postinstall Completed in 105ms
+159 timing build:deps Completed in 118ms
+160 timing build Completed in 119ms
+161 timing reify:build Completed in 121ms
+162 timing reify:trash Completed in 0ms
+163 timing reify:save Completed in 155ms
+164 timing reify Completed in 7835ms
+165 silly ADD node_modules/long
+166 silly ADD node_modules/@types/long
+167 silly ADD node_modules/@protobufjs/utf8
+168 silly ADD node_modules/@protobufjs/pool
+169 silly ADD node_modules/@protobufjs/path
+170 silly ADD node_modules/@protobufjs/inquire
+171 silly ADD node_modules/@protobufjs/float
+172 silly ADD node_modules/@protobufjs/fetch
+173 silly ADD node_modules/@protobufjs/eventemitter
+174 silly ADD node_modules/@protobufjs/codegen
+175 silly ADD node_modules/@protobufjs/base64
+176 silly ADD node_modules/@protobufjs/aspromise
+177 silly ADD node_modules/protobufjs
+178 silly ADD node_modules/protobuf-fixed
+179 timing command:install Completed in 7845ms
+180 verbose exit 0
+181 timing npm Completed in 8064ms
+182 info ok

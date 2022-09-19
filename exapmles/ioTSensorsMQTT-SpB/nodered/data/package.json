@@ -1,0 +1,10 @@
+{
+    "name": "node-red-project",
+    "description": "A Node-RED Project",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "node-red-contrib-protobuf": "^1.1.1",
+        "protobuf-fixed": "~1.0.3"
+    }
+}

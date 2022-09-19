@@ -1,0 +1,104 @@
+version: "3.9"
+services:
+##########################################################
+########################## InfluxDB ######################
+##########################################################
+  influxdb:
+    image: influxdb:latest
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2:rw
+    ports:
+      - "8086:8086"
+    networks:
+      - IoTSensors
+    restart: unless-stopped
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mypasswordmypasswordmypassword
+      - DOCKER_INFLUXDB_INIT_ORG=simulators-project
+      - DOCKER_INFLUXDB_INIT_BUCKET=simulators
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytokenmytokenmytoken
+    container_name: influxdb
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://influxdb:8086"]
+
+##########################################################
+########################## Grafana #######################
+##########################################################
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - IoTSensors
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+##########################################################
+################# IoTSensors Sparkplug B #################
+##########################################################
+  ioTSensorsMQTT-SpB:
+    image: amineamaach/sensors-sparkplugb:v1.0.0
+    restart: unless-stopped
+    container_name: mqttSparkplugB
+    volumes:
+    - ./configs/config.json:/configs/config.json
+    ports:
+      - 8080:8080
+    networks:
+      - IoTSensors
+    depends_on:
+      influxdb:
+        condition: service_healthy
+
+##########################################################
+######################### NodeRed ########################
+##########################################################
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    environment:
+      - TZ=Africa/Casablanca
+    ports:
+      - "1880:1880"
+    networks:
+      - IoTSensors
+    volumes:
+      - ./nodered/data:/data
+
+  
+#########################################################
+######################## Prometheus #####################
+#########################################################
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    networks:
+      - IoTSensors
+
+networks:
+  IoTSensors:
+
+volumes:
+  prometheus_data: {}
