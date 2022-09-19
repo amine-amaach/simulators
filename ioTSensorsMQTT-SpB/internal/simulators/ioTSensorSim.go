@@ -139,7 +139,7 @@ func (s *IoTSensorSim) Run(log *logrus.Logger) {
 	s.IsRunning = true
 	if s.DelayMin <= 0 {
 		s.DelayMin = 1
-	} else if s.DelayMin > s.DelayMax && s.Randomize {
+	} else if s.DelayMin >= s.DelayMax && s.Randomize {
 		s.DelayMax = s.DelayMin
 	}
 

@@ -53,7 +53,7 @@ var (
 // EdgeNodeSvc struct describes the EoN Node properties
 type EdgeNodeSvc struct {
 	Namespace      string
-	GroupeId       string
+	GroupId       string
 	NodeId         string
 	Devices        map[string]*DeviceSvc
 	SessionHandler *MqttSessionSvc
@@ -76,7 +76,7 @@ func NewEdgeNodeInstance(
 
 	eonNode := &EdgeNodeSvc{
 		Namespace:      namespace,
-		GroupeId:       groupId,
+		GroupId:       groupId,
 		NodeId:         nodeId,
 		SessionHandler: mqttSession,
 		Devices:        make(map[string]*DeviceSvc),
@@ -92,7 +92,7 @@ func NewEdgeNodeInstance(
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"Groupe ID": eonNode.GroupeId,
+			"Groupe ID": eonNode.GroupId,
 			"Node ID":   eonNode.NodeId,
 		}).Errorln("Error encoding the sparkplug payload ⛔")
 		return nil, err
@@ -101,14 +101,9 @@ func NewEdgeNodeInstance(
 	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes,
 		func(cm *autopaho.ConnectionManager, c *paho.Connack) {
 			log.WithFields(logrus.Fields{
-				"Groupe Id": eonNode.GroupeId,
+				"Groupe Id": eonNode.GroupId,
 				"Node Id":   eonNode.NodeId,
-			}).Infoln("MQTT connection up ✅")
-			eonNode.PublishBirth(ctx, log)
-			log.WithFields(logrus.Fields{
-				"Groupe Id": eonNode.GroupeId,
-				"Node Id":   eonNode.NodeId,
-			}).Infoln("NBIRTH certificate published successfully ✅")
+			}).Infoln("MQTT connection up ✅")				
 
 			// Subscribe to EoN Node control commands
 			topic := namespace + "/" + groupId + "/NCMD/" + nodeId
@@ -130,7 +125,7 @@ func NewEdgeNodeInstance(
 
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"Groupe ID": eonNode.GroupeId,
+			"Groupe ID": eonNode.GroupId,
 			"Node ID":   eonNode.NodeId,
 		}).Errorln("Error establishing MQTT session ⛔")
 		return nil, err
@@ -189,13 +184,13 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"Groupe ID": e.GroupeId,
+			"Groupe ID": e.GroupId,
 			"Node ID":   e.NodeId,
 		}).Errorln("Error encoding the EoN Node BIRTH certificate, retrying.. ⛔")
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   e.Namespace + "/" + e.GroupeId + "/NBIRTH/" + e.NodeId,
+		Topic:   e.Namespace + "/" + e.GroupId + "/NBIRTH/" + e.NodeId,
 		QoS:     1,
 		Payload: bytes,
 	})
@@ -207,11 +202,16 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 			Seq--
 		}
 		log.WithFields(logrus.Fields{
-			"Groupe ID": e.GroupeId,
+			"Groupe ID": e.GroupId,
 			"Node ID":   e.NodeId,
 			"Err":       err,
 		}).Errorln("Error publishing the EoN Node BIRTH certificate, retrying.. ⛔")
 	} else {
+		log.WithFields(logrus.Fields{
+			"Groupe Id": e.GroupId,
+			"Node Id":   e.NodeId,
+		}).Infoln("NBIRTH certificate published successfully ✅")
+
 		// Increment the bdSeq number for the next use
 		IncrementBdSeqNum(log)
 	}
@@ -265,10 +265,6 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 				}).Errorln("Wrong data type received for this NCMD ⛔")
 			} else if value.BooleanValue {
 				e.PublishBirth(ctx, log)
-				log.WithFields(logrus.Fields{
-					"Topic":   msg.Topic,
-					"Node Id": e.NodeId,
-				}).Infoln("NBIRTH certificate published successfully ✅")
 			}
 
 		case "Node Control/RemoveDevice":
@@ -352,7 +348,7 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 				d, err := NewDeviceInstance(
 					ctx,
 					e.Namespace,
-					e.GroupeId,
+					e.GroupId,
 					e.NodeId,
 					addDevice.DeviceIdValue, // Set default
 					log,
@@ -437,7 +433,7 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	}
 
 	_, err = e.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   e.Namespace + "/" + e.GroupeId + "/DDEATH/" + e.NodeId + "/" + deviceId,
+		Topic:   e.Namespace + "/" + e.GroupId + "/DDEATH/" + e.NodeId + "/" + deviceId,
 		QoS:     1,
 		Payload: bytes,
 	})

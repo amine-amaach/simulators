@@ -22,7 +22,7 @@ import (
 // DeviceSvc struct describes the properties of a device
 type DeviceSvc struct {
 	Namespace string
-	GroupeId  string
+	GroupId   string
 	NodeId    string
 	DeviceId  string
 	// Each device will have each own Seq and BdSeq
@@ -63,7 +63,7 @@ func NewDeviceInstance(
 
 	deviceInstance := &DeviceSvc{
 		Namespace:   namespace,
-		GroupeId:    groupId,
+		GroupId:     groupId,
 		NodeId:      nodeId,
 		DeviceId:    deviceId,
 		DeviceSeq:   0,
@@ -101,24 +101,18 @@ func NewDeviceInstance(
 
 	err = mqttSession.EstablishMqttSession(ctx, willTopic, bytes,
 		func(cm *autopaho.ConnectionManager, c *paho.Connack) {
-			// On connection up : send the DBIRTH and republish historical data
+			// On connection up
 			log.WithFields(logrus.Fields{
-				"Groupe Id": deviceInstance.GroupeId,
+				"Groupe Id": deviceInstance.GroupId,
 				"Node Id":   deviceInstance.NodeId,
 				"Device Id": deviceInstance.DeviceId,
-			}).Infoln("MQTT connection up ✅")
-			deviceInstance.PublishBirth(ctx, log)
-			log.WithFields(logrus.Fields{
-				"Groupe Id": deviceInstance.GroupeId,
-				"Node Id":   deviceInstance.NodeId,
-				"Device Id": deviceInstance.DeviceId,
-			}).Infoln("DBIRTH certificate published successfully ✅")
-
+			}).Infoln("MQTT connection up ✅")			
+			
 			if deviceInstance.Enabled && deviceInstance.CacheStore.Len() > 0 {
 				for key, value := range deviceInstance.CacheStore.Items() {
 					sensorId := strings.Split(key, ":")[0]
 					log.WithFields(logrus.Fields{
-						"Groupe Id": deviceInstance.GroupeId,
+						"Groupe Id": deviceInstance.GroupId,
 						"Node Id":   deviceInstance.NodeId,
 						"Device Id": deviceInstance.DeviceId,
 						"Key":       key,
@@ -130,7 +124,7 @@ func NewDeviceInstance(
 				// Clear the in-memory store
 				deviceInstance.CacheStore.DeleteAll()
 			}
-
+			
 			// Subscribe to device control commands
 			topic := namespace + "/" + groupId + "/DCMD/" + nodeId + "/" + deviceId
 			if _, err := cm.Subscribe(ctx, &paho.Subscribe{
@@ -142,6 +136,7 @@ func NewDeviceInstance(
 				return
 			}
 			log.WithField("Topic", topic).Infoln("MQTT subscription made ✅")
+
 
 		}, paho.NewSingleHandlerRouter(func(p *paho.Publish) {
 			deviceInstance.OnMessageArrived(ctx, p, log)
@@ -203,7 +198,7 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"Groupe ID": d.GroupeId,
+			"Groupe ID": d.GroupId,
 			"Node ID":   d.NodeId,
 			"Device ID": d.DeviceId,
 		}).Errorln("Error encoding DBIRTH certificate ⛔")
@@ -211,27 +206,33 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 	}
 
 	_, err = d.SessionHandler.MqttClient.Publish(ctx, &paho.Publish{
-		Topic:   d.Namespace + "/" + d.GroupeId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
+		Topic:   d.Namespace + "/" + d.GroupId + "/DBIRTH/" + d.NodeId + "/" + d.DeviceId,
 		QoS:     1,
 		Payload: bytes,
 	})
 
 	if err != nil {
-		d.connMut.Lock()
+		d.connMut.RLock()
 		if d.DeviceSeq == 0 {
 			d.DeviceSeq = 256
 		} else {
 			d.DeviceSeq--
 		}
-		d.connMut.Unlock()
+		d.connMut.RUnlock()
 		log.WithFields(logrus.Fields{
-			"Groupe ID": d.GroupeId,
+			"Groupe ID": d.GroupId,
 			"Node ID":   d.NodeId,
 			"Device ID": d.DeviceId,
 			"Err":       err,
 		}).Errorln("Error publishing DBIRTH certificate, retrying.. ⛔")
 		return
 	} else {
+		log.WithFields(logrus.Fields{
+			"Groupe Id": d.GroupId,
+			"Node Id":   d.NodeId,
+			"Device Id": d.DeviceId,
+		}).Infoln("DBIRTH certificate published successfully ✅")
+
 		// Increment the bdSeq number for the next use
 		IncrementBdSeqNum(log)
 	}
@@ -241,7 +242,7 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 // OnMessageArrived used to handle the device incoming control commands
 func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log *logrus.Logger) {
 	log.WithField("Topic", msg.Topic).Infoln("New DCMD arrived 🔔")
-	
+
 	var payloadTemplate sparkplug.Payload_Template
 	err := proto.Unmarshal(msg.Payload, &payloadTemplate)
 	if err != nil {
@@ -262,7 +263,6 @@ func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log
 				}).Errorln("Wrong data type received for this DCMD ⛔")
 			} else if value.BooleanValue {
 				d.PublishBirth(ctx, log)
-				log.WithField("Device Id", d.DeviceId).Infoln("DBIRTH published ✅")
 			}
 
 		case "Device Control/OFF":
@@ -277,7 +277,7 @@ func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log
 				}
 				log.WithField("Device Id", d.DeviceId).Infoln("Device turned off successfully ✅")
 			}
-		
+
 		case "Device Control/AddSimulator":
 			if value, ok := metric.GetValue().(*sparkplug.Payload_Metric_BooleanValue); !ok {
 				log.WithFields(logrus.Fields{
@@ -379,7 +379,6 @@ func (d *DeviceSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, log
 					), log,
 				).RunSimulators(log).RunPublisher(ctx, log)
 
-				
 			}
 
 		case "Device Control/UpdateSimulator":
@@ -636,7 +635,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 	}
 
 	// Only a device instance that is permitted to run a simulator attached to it.
-	topic := d.Namespace + "/" + d.GroupeId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
+	topic := d.Namespace + "/" + d.GroupId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
 
 	cm := d.SessionHandler.MqttClient
 	seq := d.GetNextDeviceSeqNum(log)
@@ -660,7 +659,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"Groupe Id": d.GroupeId,
+			"Groupe Id": d.GroupId,
 			"Node Id":   d.NodeId,
 			"Device Id": d.DeviceId,
 			"Sensor Id": sensorId,
@@ -680,7 +679,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 		if err != nil {
 			if d.Enabled {
 				log.WithFields(logrus.Fields{
-					"Groupe Id":       d.GroupeId,
+					"Groupe Id":       d.GroupId,
 					"Node Id":         d.NodeId,
 					"Device Id":       d.DeviceId,
 					"Sensor Id":       sensorId,
@@ -698,7 +697,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 
 			} else {
 				log.WithFields(logrus.Fields{
-					"Groupe Id":       d.GroupeId,
+					"Groupe Id":       d.GroupId,
 					"Node Id":         d.NodeId,
 					"Device Id":       d.DeviceId,
 					"Sensor Id":       sensorId,
@@ -713,7 +712,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 			// Store and forward mission is to successfully deliver DDATA to the broker, i.e receiving PUBACK and therefore
 			// we're not storing DDATA in other cases.
 			log.WithFields(logrus.Fields{
-				"Groupe Id": d.GroupeId,
+				"Groupe Id": d.GroupId,
 				"Node Id":   d.NodeId,
 				"Device Id": d.DeviceId,
 				"Sensor Id": sensorId,
@@ -722,7 +721,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 		} else {
 			AckMsgs.Inc()
 			log.WithFields(logrus.Fields{
-				"Groupe Id":  d.GroupeId,
+				"Groupe Id":  d.GroupId,
 				"Node Id":    d.NodeId,
 				"Device Id":  d.DeviceId,
 				"Sensor Id":  sensorId,
@@ -736,7 +735,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					for key, value := range d.CacheStore.Items() {
 						sensorId := strings.Split(key, ":")[0]
 						log.WithFields(logrus.Fields{
-							"Groupe Id": d.GroupeId,
+							"Groupe Id": d.GroupId,
 							"Node Id":   d.NodeId,
 							"Device Id": d.DeviceId,
 							"Key":       key,
