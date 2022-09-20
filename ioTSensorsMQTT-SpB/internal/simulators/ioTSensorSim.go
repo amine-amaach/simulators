@@ -26,7 +26,7 @@ type IoTSensorSim struct {
 	Randomize bool
 
 	// Channel to send data to device
-	SensorData chan float64
+	SensorData chan SensorData
 	// Shutdown the sensor
 	Shutdown chan bool
 
@@ -59,6 +59,12 @@ type UpdateSensorParams struct {
 	Randomize bool
 }
 
+type SensorData struct {
+	Value     float64
+	Timestamp time.Time
+	Seq uint64
+}
+
 func NewIoTSensorSim(
 	id string,
 	mean,
@@ -77,7 +83,7 @@ func NewIoTSensorSim(
 		currentValue:      mean - rand.Float64(),
 		IsRunning:         false,
 		IsAssigned:        &isAssigned,
-		SensorData:        make(chan float64),
+		SensorData:        make(chan SensorData),
 		// Add a buffered channel with capacity 1
 		// to send a shutdown signal from the device.
 		Shutdown:  make(chan bool, 1),
@@ -89,14 +95,18 @@ func NewIoTSensorSim(
 	}
 }
 
-func (s *IoTSensorSim) calculateNextValue() float64 {
+func (s *IoTSensorSim) calculateNextValue() SensorData {
 	// first calculate how much the value will be changed
 	valueChange := rand.Float64() * math.Abs(s.standardDeviation) / 10
 	// second decide if the value is increased or decreased
 	factor := s.decideFactor()
 	// apply valueChange and factor to value and return
 	s.currentValue += valueChange * factor
-	return s.currentValue
+	timestamp := time.Now().Local()
+	return SensorData{
+		Value: s.currentValue,
+		Timestamp: timestamp,
+	}
 }
 
 func (s *IoTSensorSim) decideFactor() float64 {

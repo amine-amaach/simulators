@@ -35,7 +35,7 @@ func (encoder *SparkplugBEncoder) GetBytes(payload *model.SparkplugBPayload) ([]
 
 	// Set the timestamp
 	if !payload.Timestamp.IsZero() {
-		time := uint64(payload.Timestamp.UnixMilli())
+		time := uint64(payload.Timestamp.UnixNano())
 		protoMsg.Timestamp = &time
 	}
 

@@ -47,7 +47,7 @@ type DeviceSvc struct {
 	TTL uint32 // Default 10 minutes
 
 	// Simulated sensors data type == float64
-	CacheStore *ttlcache.Cache[string, float64]
+	CacheStore *ttlcache.Cache[string, simulators.SensorData]
 }
 
 // NewDeviceInstance used to instantiate a new instance of a device.
@@ -77,7 +77,7 @@ func NewDeviceInstance(
 	// If store and forward enabled
 	if d.Enabled {
 		d.CacheStore = ttlcache.New(
-			ttlcache.WithTTL[string, float64](time.Duration(d.TTL) * time.Minute),
+			ttlcache.WithTTL[string, simulators.SensorData](time.Duration(d.TTL) * time.Minute),
 		)
 	}
 
@@ -617,20 +617,19 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 }
 
 // publishSensorData used by RunPublisher to prepare the payload of a sensor and publishes it to the broker.
-func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data float64, log *logrus.Logger) {
-	// Preventing race condition between goroutines when building/publishing payloads.
+func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data simulators.SensorData, log *logrus.Logger) {
+	// Preventing race condition between goroutines on seq number.
 	d.connMut.RLock()
-	defer d.connMut.RUnlock()
+	data.Seq = d.GetNextDeviceSeqNum(log)
+	d.connMut.RUnlock()
 
 	if d.Simulators[sensorId] == nil {
 		return
 	}
 
-	// Only a device instance that is permitted to run a simulator attached to it.
 	topic := d.Namespace + "/" + d.GroupId + "/DDATA/" + d.NodeId + "/" + d.DeviceId
 
 	cm := d.SessionHandler.MqttClient
-	seq := d.GetNextDeviceSeqNum(log)
 
 	if cm == nil {
 		log.WithFields(logrus.Fields{
@@ -643,9 +642,9 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 	go func(ctx context.Context, cm *autopaho.ConnectionManager) {
 		// Building up the DDATA Payload.
 		alias := d.Simulators[sensorId].Alias
-		payload := model.NewSparkplubBPayload(time.Now(), seq).
+		payload := model.NewSparkplubBPayload(time.Now(), data.Seq).
 			// Metric name - should only be included on birth
-			AddMetric(*model.NewMetric("", 10, alias, data))
+			AddMetric(*model.NewMetric("", 10, alias, data.Value).SetTimestamp(data.Timestamp))
 			//  sparkplug.DataType_Double == 10
 
 		// Encoding the sparkplug Payload.
@@ -699,7 +698,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Sensor Id":       sensorId,
 					"Store & Forward": "Disabled",
 					"Err":             err,
-					"Device Seq":      seq,
+					"Device Seq":      data.Seq,
 				}).Errorln("Connection with the MQTT broker is currently down, dropping data.. ⛔")
 				UnAckMsgs.Inc()
 			}
@@ -711,7 +710,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Node Id":    d.NodeId,
 				"Device Id":  d.DeviceId,
 				"Sensor Id":  sensorId,
-				"Device Seq": seq,
+				"Device Seq": data.Seq,
 			}).Infoln("✅ DDATA Published to the broker ✅")
 		}
 	}(ctx, cm)

@@ -77,11 +77,11 @@ func (m *Metric) ConvertMetric(protoMetric *sparkplug.Payload_Metric, log *logru
 
 	// Set Timestamp
 	if !m.TimeStamp.IsZero() {
-		time := uint64(m.TimeStamp.UnixMilli())
+		time := uint64(m.TimeStamp.UnixNano())
 		protoMetric.Timestamp = &time
 	} else {
 		m.TimeStamp = time.Now()
-		time := uint64(m.TimeStamp.UnixMilli())
+		time := uint64(m.TimeStamp.UnixNano())
 		protoMetric.Timestamp = &time
 	}
 
@@ -187,5 +187,10 @@ func (m *Metric) GetValue(protoMetric *sparkplug.Payload_Metric, log *logrus.Log
 
 func (m *Metric) SetAlias(alias uint64) *Metric {
 	m.Alias = alias
+	return m
+}
+
+func (m *Metric) SetTimestamp(timestamp time.Time) *Metric {
+	m.TimeStamp = timestamp
 	return m
 }
