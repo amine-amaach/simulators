@@ -6,11 +6,11 @@ services:
   influxdb:
     image: influxdb:latest
     volumes:
-      - ./influxdb/data:/var/lib/influxdb2:rw
+      - ./influxdb/data:/var/lib/influxdb2:rwmqttSparkplugB
     ports:
       - "8086:8086"
     networks:
-      - IoTSensors
+      - main-net
     restart: unless-stopped
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
@@ -36,7 +36,7 @@ services:
     ports:
       - "3000:3000"
     networks:
-      - IoTSensors
+      - main-net
     volumes:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
@@ -46,20 +46,23 @@ services:
         condition: service_healthy
 
 ##########################################################
-################# IoTSensors Sparkplug B #################
+################# main-net Sparkplug B #################
 ##########################################################
   ioTSensorsMQTT-SpB:
     image: amineamaach/sensors-sparkplugb:v1.0.0
-    restart: unless-stopped
+    restart: "no"
     container_name: mqttSparkplugB
     volumes:
     - ./configs/config.json:/configs/config.json
     ports:
       - 8080:8080
     networks:
-      - IoTSensors
+      - main-net
+      - emqx-net
     depends_on:
       influxdb:
+        condition: service_healthy
+      mqtt:
         condition: service_healthy
 
 ##########################################################
@@ -73,10 +76,34 @@ services:
     ports:
       - "1880:1880"
     networks:
-      - IoTSensors
+      - main-net
+      - emqx-net
     volumes:
       - ./nodered/data:/data
 
+##########################################################
+####################### MQTT/EMQX ########################
+##########################################################
+  mqtt:
+    image:  emqx/emqx:4.3.8
+    ports:
+      - 1883:1883
+      - 8083:8083
+      - 18083:18083
+    networks:
+      - main-net
+      - emqx-net
+    restart: unless-stopped
+    environment:
+      - EMQX_LOADED_PLUGINS=emqx_recon,emqx_retainer,emqx_management,emqx_dashboard,emqx_auth_mnesia
+      - EMQX_ALLOW_ANONYMOUS=true
+      - EMQX_ACL_NOMATCH=allow
+    container_name: mqtt
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://mqtt:18083"]
   
 #########################################################
 ######################## Prometheus #####################
@@ -95,10 +122,13 @@ services:
     ports:
       - 9090:9090
     networks:
-      - IoTSensors
+      - main-net
+    depends_on:
+      - mqttSparkplugB
 
 networks:
-  IoTSensors:
+  main-net:
+  emqx-net:
 
 volumes:
   prometheus_data: {}

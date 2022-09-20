@@ -109,7 +109,6 @@ func NewDeviceInstance(
 			}).Infoln("MQTT connection up ✅")
 
 			if d.Enabled && d.CacheStore.Len() > 0 {
-				CachedMsgs.Set(float64(d.CacheStore.Len()))
 				for key, value := range d.CacheStore.Items() {
 					sensorId := strings.Split(key, ":")[0]
 					log.WithFields(logrus.Fields{
@@ -124,6 +123,7 @@ func NewDeviceInstance(
 				}
 				// Clear the in-memory store
 				d.CacheStore.DeleteAll()
+				CachedMsgs.Set(0)
 			}
 
 			// Subscribe to device control commands
@@ -712,6 +712,26 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Sensor Id":  sensorId,
 				"Device Seq": data.Seq,
 			}).Infoln("✅ DDATA Published to the broker ✅")
+
+			// During the keepalive period, we may have cached messages that will not be published until
+			// the OnConnectionUp triggers again, to make sure we published all the cached messages:  
+			if d.Enabled && d.CacheStore.Len() > 0 {
+				for key, value := range d.CacheStore.Items() {
+					sensorId := strings.Split(key, ":")[0]
+					log.WithFields(logrus.Fields{
+						"Groupe Id": d.GroupId,
+						"Node Id":   d.NodeId,
+						"Device Id": d.DeviceId,
+						"Key":       key,
+					}).Infoln("Republishing unacknowledged messages.. 🔔")
+					// Keep retrying publishing the data to the broker until we get
+					// PUBACK or the TTL expires.
+					go d.publishSensorData(ctx, sensorId, value.Value(), log)
+				}
+				// Clear the in-memory store
+				d.CacheStore.DeleteAll()
+				CachedMsgs.Set(0)
+			}
 		}
 	}(ctx, cm)
 }
