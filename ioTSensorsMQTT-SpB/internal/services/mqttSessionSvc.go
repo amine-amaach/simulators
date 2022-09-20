@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"time"
 
 	"github.com/amineamaach/simulators/iotSensorsMQTT-SpB/internal/component"
 	"github.com/eclipse/paho.golang/autopaho"
+	"github.com/eclipse/paho.golang/packets"
 	"github.com/eclipse/paho.golang/paho"
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/sirupsen/logrus"
@@ -59,6 +61,7 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
 		cliId = "IoTSensorsMQTT-SpB::" + cliId
 	}
 
+	var conn net.Conn
 	cliCfg := autopaho.ClientConfig{
 		BrokerUrls:        []*url.URL{srvURL},
 		KeepAlive:         m.MqttConfigs.KeepAlive,
@@ -82,6 +85,7 @@ func (m *MqttSessionSvc) EstablishMqttSession(ctx context.Context,
 					m.Log.Errorf("Server requested disconnect; reason code : %d ⛔\n", d.ReasonCode)
 				}
 			},
+			Conn: packets.NewThreadSafeConn(conn),
 		},
 	}
 	cliCfg.SetConnectPacketConfigurator(func(c *paho.Connect) *paho.Connect {

@@ -1,6 +1,6 @@
 {
     "mqtt_config": {
-        "url": "tcp://broker.emqx.io:1883",
+        "url": "tcp://localhost:1883",
         "qos": 1,
         "client_id": "",
         "user": "",
@@ -24,6 +24,46 @@
                 "simulators": [
                     {
                         "sensor_id": "Temperature",
+                        "mean": 30.6,
+                        "standard_deviation": 3.1,
+                        "delay_min": 3,
+                        "delay_max": 6,
+                        "randomize": true
+                    },
+                    {
+                        "sensor_id": "TempeSDFSture1",
+                        "mean": 30.6,
+                        "standard_deviation": 3.1,
+                        "delay_min": 3,
+                        "delay_max": 6,
+                        "randomize": true
+                    },
+                    {
+                        "sensor_id": "TempeDFDture1",
+                        "mean": 30.6,
+                        "standard_deviation": 3.1,
+                        "delay_min": 3,
+                        "delay_max": 6,
+                        "randomize": true
+                    },
+                    {
+                        "sensor_id": "TemASDure1",
+                        "mean": 30.6,
+                        "standard_deviation": 3.1,
+                        "delay_min": 3,
+                        "delay_max": 6,
+                        "randomize": true
+                    },
+                    {
+                        "sensor_id": "TempsFDture1",
+                        "mean": 30.6,
+                        "standard_deviation": 3.1,
+                        "delay_min": 3,
+                        "delay_max": 6,
+                        "randomize": true
+                    },
+                    {
+                        "sensor_id": "TemASxDure1",
                         "mean": 30.6,
                         "standard_deviation": 3.1,
                         "delay_min": 3,

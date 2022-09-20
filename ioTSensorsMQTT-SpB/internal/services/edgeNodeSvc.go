@@ -155,6 +155,8 @@ func (e *EdgeNodeSvc) PublishBirth(ctx context.Context, log *logrus.Logger) *Edg
 	// Create the EoN Node BIRTH payload
 	payload := model.NewSparkplubBPayload(time.Now(), GetNextSeqNum(log)).
 		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, BdSeq)).
+		AddMetric(*model.NewMetric("Node Id", sparkplug.DataType_String, 18, e.NodeId)).
+		AddMetric(*model.NewMetric("Group Id", sparkplug.DataType_String, 19, e.GroupId)).
 		AddMetric(*model.NewMetric("Maintainer", sparkplug.DataType_String, 2, Maintainer)).
 		AddMetric(*model.NewMetric("Website", sparkplug.DataType_String, 3, Website)).
 		AddMetric(*model.NewMetric("App version", sparkplug.DataType_String, 4, AppVersion)).
@@ -350,11 +352,11 @@ func (e *EdgeNodeSvc) OnMessageArrived(ctx context.Context, msg *paho.Publish, l
 					e.Namespace,
 					e.GroupId,
 					e.NodeId,
-					addDevice.DeviceIdValue, // Set default
+					addDevice.DeviceIdValue,
 					log,
 					&e.SessionHandler.MqttConfigs,
-					addDevice.TtlValue,     // Set default
-					addDevice.EnabledValue, // Set default
+					addDevice.TtlValue,
+					addDevice.EnabledValue,
 				)
 				if err != nil {
 					log.WithFields(logrus.Fields{
@@ -388,6 +390,7 @@ func (e *EdgeNodeSvc) AddDevice(ctx context.Context, device *DeviceSvc, log *log
 			e.Devices[device.DeviceId] = device
 
 			log.WithField("Device Id", device.DeviceId).Infoln("Device added successfully ✅")
+			e.PublishBirth(ctx,log)
 			return e
 		}
 		log.Errorln("Device id not set ⛔")
@@ -451,6 +454,7 @@ func (e *EdgeNodeSvc) ShutdownDevice(ctx context.Context, deviceId string, log *
 	deviceToShutdown = nil
 
 	log.WithField("Device Id", deviceId).Infoln("Device removed successfully ✅")
+	e.PublishBirth(ctx,log)
 	return e
 }
 

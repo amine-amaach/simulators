@@ -45,12 +45,6 @@ func Run() {
 		panic(err)
 	}
 
-	// Wait for the EoN Node to establish an MQTT session
-	eonNode.SessionHandler.MqttClient.AwaitConnection(eodNodeContext)
-
-	// Publish NBIRTH certificate
-	eonNode.PublishBirth(eodNodeContext, logger)
-
 	for _, device := range cfg.EoNNodeConfig.Devices {
 		deviceContext := context.Background()
 		// Instantiate a new device
@@ -76,12 +70,6 @@ func Run() {
 
 		// Attach the new device to the EoN Node
 		eonNode.AddDevice(eodNodeContext, newDevice, logger)
-
-		// Wait for the new device to establish an MQTT session
-		newDevice.SessionHandler.MqttClient.AwaitConnection(deviceContext)
-
-		// Publish DBIRTH certificate
-		newDevice.PublishBirth(deviceContext, logger)
 
 		// Add the defined simulated IoTSensors to the new device
 		for _, sim := range device.Simulators {

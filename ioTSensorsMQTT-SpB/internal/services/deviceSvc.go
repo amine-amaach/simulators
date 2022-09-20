@@ -61,7 +61,7 @@ func NewDeviceInstance(
 ) (*DeviceSvc, error) {
 	log.Debugln("Setting up a new device instance 🔔")
 
-	deviceInstance := &DeviceSvc{
+	d := &DeviceSvc{
 		Namespace:   namespace,
 		GroupId:     groupId,
 		NodeId:      nodeId,
@@ -75,9 +75,9 @@ func NewDeviceInstance(
 	}
 
 	// If store and forward enabled
-	if deviceInstance.Enabled {
-		deviceInstance.CacheStore = ttlcache.New(
-			ttlcache.WithTTL[string, float64](time.Duration(deviceInstance.TTL) * time.Minute),
+	if d.Enabled {
+		d.CacheStore = ttlcache.New(
+			ttlcache.WithTTL[string, float64](time.Duration(d.TTL) * time.Minute),
 		)
 	}
 
@@ -86,11 +86,11 @@ func NewDeviceInstance(
 		MqttConfigs: *mqttConfigs,
 	}
 
-	willTopic := namespace + "/" + groupId + "/DDEATH/" + nodeId + "/" + deviceId
+	willTopic := d.Namespace + "/" + d.GroupId + "/DDEATH/" + d.NodeId + "/" + d.DeviceId
 
 	// Building up the Death Certificate MQTT Payload.
-	payload := model.NewSparkplubBPayload(time.Now(), deviceInstance.GetNextDeviceSeqNum(log)).
-		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 0, deviceInstance.GetNextDeviceSeqNum(log)))
+	payload := model.NewSparkplubBPayload(time.Now(), d.GetNextDeviceSeqNum(log)).
+		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 0, d.GetNextDeviceSeqNum(log)))
 
 	// Encoding the Death Certificate MQTT Payload.
 	bytes, err := NewSparkplugBEncoder(log).GetBytes(payload)
@@ -103,30 +103,31 @@ func NewDeviceInstance(
 		func(cm *autopaho.ConnectionManager, c *paho.Connack) {
 			// On connection up
 			log.WithFields(logrus.Fields{
-				"Groupe Id": deviceInstance.GroupId,
-				"Node Id":   deviceInstance.NodeId,
-				"Device Id": deviceInstance.DeviceId,
-			}).Infoln("MQTT connection up ✅")			
-			
-			if deviceInstance.Enabled && deviceInstance.CacheStore.Len() > 0 {
-				for key, value := range deviceInstance.CacheStore.Items() {
+				"Groupe Id": d.GroupId,
+				"Node Id":   d.NodeId,
+				"Device Id": d.DeviceId,
+			}).Infoln("MQTT connection up ✅")
+
+			if d.Enabled && d.CacheStore.Len() > 0 {
+				CachedMsgs.Set(float64(d.CacheStore.Len()))
+				for key, value := range d.CacheStore.Items() {
 					sensorId := strings.Split(key, ":")[0]
 					log.WithFields(logrus.Fields{
-						"Groupe Id": deviceInstance.GroupId,
-						"Node Id":   deviceInstance.NodeId,
-						"Device Id": deviceInstance.DeviceId,
+						"Groupe Id": d.GroupId,
+						"Node Id":   d.NodeId,
+						"Device Id": d.DeviceId,
 						"Key":       key,
 					}).Infoln("Republishing unacknowledged messages.. 🔔")
 					// Keep retrying publishing the data to the broker until we get
 					// PUBACK or the TTL expires.
-					deviceInstance.publishSensorData(ctx, sensorId, value.Value(), log)
+					go d.publishSensorData(ctx, sensorId, value.Value(), log)
 				}
 				// Clear the in-memory store
-				deviceInstance.CacheStore.DeleteAll()
+				d.CacheStore.DeleteAll()
 			}
-			
+
 			// Subscribe to device control commands
-			topic := namespace + "/" + groupId + "/DCMD/" + nodeId + "/" + deviceId
+			topic := d.Namespace + "/" + d.GroupId + "/DCMD/" + d.NodeId + "/" + d.DeviceId
 			if _, err := cm.Subscribe(ctx, &paho.Subscribe{
 				Subscriptions: map[string]paho.SubscribeOptions{
 					topic: {QoS: mqttConfigs.QoS},
@@ -137,9 +138,8 @@ func NewDeviceInstance(
 			}
 			log.WithField("Topic", topic).Infoln("MQTT subscription made ✅")
 
-
 		}, paho.NewSingleHandlerRouter(func(p *paho.Publish) {
-			deviceInstance.OnMessageArrived(ctx, p, log)
+			d.OnMessageArrived(ctx, p, log)
 		}),
 	)
 
@@ -148,10 +148,10 @@ func NewDeviceInstance(
 		return nil, err
 	}
 
-	deviceInstance.StartTime = time.Now()
-	deviceInstance.Alias = uint64(100 + rand.Int63n(10000))
-	deviceInstance.SessionHandler = mqttSession
-	return deviceInstance, err
+	d.StartTime = time.Now()
+	d.Alias = uint64(100 + rand.Int63n(10000))
+	d.SessionHandler = mqttSession
+	return d, err
 }
 
 // PublishBirth used to publish the device DBIRTH certificate to the broker.
@@ -172,6 +172,9 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 	// connections for each device (as with the primary application in the specs).
 	payload := model.NewSparkplubBPayload(time.Now(), seq).
 		AddMetric(*model.NewMetric("bdSeq", sparkplug.DataType_UInt64, 1, d.DeviceBdSeq)).
+		AddMetric(*model.NewMetric("Device Id", sparkplug.DataType_String, 10, d.DeviceId)).
+		AddMetric(*model.NewMetric("Node Id", sparkplug.DataType_String, 11, d.NodeId)).
+		AddMetric(*model.NewMetric("Group Id", sparkplug.DataType_String, 11, d.GroupId)).
 		// Add control commands to control the devices in runtime.
 		AddMetric(*model.NewMetric("Device Control/Rebirth", sparkplug.DataType_Boolean, 2, false)).
 		AddMetric(*model.NewMetric("Device Control/OFF", sparkplug.DataType_Boolean, 3, false)).
@@ -179,17 +182,16 @@ func (d *DeviceSvc) PublishBirth(ctx context.Context, log *logrus.Logger) {
 		AddMetric(*model.NewMetric("Device Control/RemoveSimulator", sparkplug.DataType_Boolean, 5, false)).
 		AddMetric(*model.NewMetric("Device Control/UpdateSimulator", sparkplug.DataType_Boolean, 6, false)).
 		// Add some properties
-		AddMetric(*model.NewMetric("Properties/Parent EoN Node", sparkplug.DataType_String, 7, d.NodeId)).
 		AddMetric(*model.NewMetric("Properties/Number of simulators", sparkplug.DataType_Int64, 8, int64(len(d.Simulators)))).
 		AddMetric(*model.NewMetric("Properties/Up time ms", sparkplug.DataType_Int64, 9, upTime))
 
 	for _, sim := range d.Simulators {
 		var i uint64 = 1
 		if sim != nil {
-			payload.AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId, sparkplug.DataType_Double, sim.Alias, 0.0)).
-				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Minimum delay", sparkplug.DataType_UInt32, sim.Alias+i, sim.DelayMin)).
-				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Maximum delay", sparkplug.DataType_UInt32, sim.Alias+i, sim.DelayMax)).
-				AddMetric(*model.NewMetric(d.DeviceId+"Sensors/"+sim.SensorId+"/Randomized", sparkplug.DataType_Boolean, sim.Alias+i, sim.Randomize))
+			payload.AddMetric(*model.NewMetric(d.DeviceId+"/Sensors/"+sim.SensorId, sparkplug.DataType_Double, sim.Alias, 0.0)).
+				AddMetric(*model.NewMetric(d.DeviceId+"/Sensors/"+sim.SensorId+"/Minimum delay", sparkplug.DataType_UInt32, sim.Alias+i+1, sim.DelayMin)).
+				AddMetric(*model.NewMetric(d.DeviceId+"/Sensors/"+sim.SensorId+"/Maximum delay", sparkplug.DataType_UInt32, sim.Alias+i+2, sim.DelayMax)).
+				AddMetric(*model.NewMetric(d.DeviceId+"/Sensors/"+sim.SensorId+"/Randomized", sparkplug.DataType_Boolean, sim.Alias+i+3, sim.Randomize))
 			i++
 		}
 	}
@@ -532,6 +534,7 @@ func (d *DeviceSvc) AddSimulator(ctx context.Context, sim *simulators.IoTSensorS
 			"Sensor Id": sim.SensorId,
 			"Device Id": d.DeviceId,
 		}).Infoln("Sensor added successfully ✅")
+		d.PublishBirth(ctx, log)
 		return d
 	} else {
 		log.Errorln("Sensor id not defined ⛔")
@@ -567,6 +570,7 @@ func (d *DeviceSvc) ShutdownSimulator(ctx context.Context, sensorId string, log 
 		"Sensor Id": sensorId,
 		"Device Id": d.DeviceId,
 	}).Infoln("Sensor removed successfully ✅")
+	d.PublishBirth(ctx, log)
 	return d
 }
 
@@ -586,18 +590,6 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 	for _, sim := range d.Simulators {
 		go func(d *DeviceSvc, s *simulators.IoTSensorSim) {
 			for {
-				// AwaitConnection will return immediately if connection is up.
-				// Adding this call stops publication whilst connection is unavailable.
-				if !d.Enabled {
-					err := d.SessionHandler.MqttClient.AwaitConnection(ctx)
-					if err != nil { // Should only happen when context is cancelled
-						log.Infof("Publisher done (AwaitConnection: %s), Shutdown sensors..\n", err)
-						for _, sim := range d.Simulators {
-							d.ShutdownSimulator(ctx, sim.SensorId, log)
-						}
-						return
-					}
-				}
 				select {
 				case <-d.SessionHandler.MqttClient.Done():
 					log.Infoln("MQTT session terminated, cleaning up.. 🔔")
@@ -647,37 +639,44 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 		return
 	}
 
-	// Building up the DDATA Payload.
-	alias := d.Simulators[sensorId].Alias
-	payload := model.NewSparkplubBPayload(time.Now(), seq).
-		// Metric name - should only be included on birth
-		AddMetric(*model.NewMetric("", 10, alias, data))
-		//  sparkplug.DataType_Double == 10
-
-	// Encoding the sparkplug Payload.
-	msg, err := NewSparkplugBEncoder(log).GetBytes(payload)
-
-	if err != nil {
-		log.WithFields(logrus.Fields{
-			"Groupe Id": d.GroupId,
-			"Node Id":   d.NodeId,
-			"Device Id": d.DeviceId,
-			"Sensor Id": sensorId,
-			"Err":       err,
-		}).Errorln("Error encoding the sparkplug payload, not publishing.. ⛔")
-	}
-
 	// Publish will block so we run it in a goRoutine
-	go func(ctx context.Context, cm *autopaho.ConnectionManager, msg []byte) {
-		pr, err := cm.Publish(ctx, &paho.Publish{
+	go func(ctx context.Context, cm *autopaho.ConnectionManager) {
+		// Building up the DDATA Payload.
+		alias := d.Simulators[sensorId].Alias
+		payload := model.NewSparkplubBPayload(time.Now(), seq).
+			// Metric name - should only be included on birth
+			AddMetric(*model.NewMetric("", 10, alias, data))
+			//  sparkplug.DataType_Double == 10
+
+		// Encoding the sparkplug Payload.
+		msg, err := NewSparkplugBEncoder(log).GetBytes(payload)
+
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"Groupe Id": d.GroupId,
+				"Node Id":   d.NodeId,
+				"Device Id": d.DeviceId,
+				"Sensor Id": sensorId,
+				"Err":       err,
+			}).Errorln("Error encoding the sparkplug payload, not publishing.. ⛔")
+			return
+		}
+
+		_, err = cm.Publish(ctx, &paho.Publish{
 			QoS:     d.SessionHandler.MqttConfigs.QoS,
 			Topic:   topic,
 			Payload: msg,
 		})
-		// The reason code is a single-byte unsigned value used to indicate the result of the operation.
-		// The reason code less than 0x80 (16) indicates that the result of the operation is successful.
+
 		if err != nil {
 			if d.Enabled {
+				log.Infoln("New data point stored, expires at ",
+					d.CacheStore.Set(sensorId+":"+fmt.Sprintf("%d", time.Now().UnixMilli()),
+						data,
+						ttlcache.DefaultTTL).ExpiresAt().Local().String(), " 🔔",
+				)
+				CachedMsgs.Inc()
+
 				log.WithFields(logrus.Fields{
 					"Groupe Id":       d.GroupId,
 					"Node Id":         d.NodeId,
@@ -686,15 +685,12 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 					"Store & Forward": "Enabled",
 					"Err":             err,
 				}).Errorln("Connection with the MQTT broker is currently down, retrying when connection is up.. ⛔")
-
-				CachedMsgs.Inc()
-
-				log.Infoln("New data point stored, expires at ",
-					d.CacheStore.Set(sensorId+":"+fmt.Sprintf("%d", time.Now().UnixMilli()),
-						data,
-						ttlcache.DefaultTTL).ExpiresAt().Local().String(), " 🔔",
-				)
-
+				// Don't increment the seq number in failure attempt
+				if d.DeviceSeq == 0 {
+					d.DeviceSeq = 256
+				} else {
+					d.DeviceSeq--
+				}
 			} else {
 				log.WithFields(logrus.Fields{
 					"Groupe Id":       d.GroupId,
@@ -708,16 +704,6 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				UnAckMsgs.Inc()
 			}
 
-		} else if pr.ReasonCode != 0 && pr.ReasonCode != 16 { // 16 = Server received message but there are no subscribers
-			// Store and forward mission is to successfully deliver DDATA to the broker, i.e receiving PUBACK and therefore
-			// we're not storing DDATA in other cases.
-			log.WithFields(logrus.Fields{
-				"Groupe Id": d.GroupId,
-				"Node Id":   d.NodeId,
-				"Device Id": d.DeviceId,
-				"Sensor Id": sensorId,
-			}).Errorf("reason code %d received ⛔\n", pr.ReasonCode)
-			UnAckMsgs.Inc()
 		} else {
 			AckMsgs.Inc()
 			log.WithFields(logrus.Fields{
@@ -726,30 +712,9 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Device Id":  d.DeviceId,
 				"Sensor Id":  sensorId,
 				"Device Seq": seq,
-			}).Infoln("DDATA Published to the broker ✅")
-
-			if d.Enabled {
-				CachedMsgs.Set(float64(d.CacheStore.Len()))
-				// Check if we still have cached message as we could lose connection during the connection timeout.
-				if d.CacheStore.Len() > 0 {
-					for key, value := range d.CacheStore.Items() {
-						sensorId := strings.Split(key, ":")[0]
-						log.WithFields(logrus.Fields{
-							"Groupe Id": d.GroupId,
-							"Node Id":   d.NodeId,
-							"Device Id": d.DeviceId,
-							"Key":       key,
-						}).Infoln("Republishing unacknowledged messages.. 🔔")
-						// Keep retrying publishing the data to the broker until we get
-						// PUBACK or the TTL to fire.
-						d.publishSensorData(ctx, sensorId, value.Value(), log)
-					}
-					// Clear the in-memory store
-					d.CacheStore.DeleteAll()
-				}
-			}
+			}).Infoln("✅ DDATA Published to the broker ✅")
 		}
-	}(ctx, cm, msg)
+	}(ctx, cm)
 }
 
 // GetNextDeviceSeqNum used to return and increment the EoN Node sequence number
