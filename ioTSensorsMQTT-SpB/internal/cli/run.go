@@ -45,6 +45,9 @@ func Run() {
 		panic(err)
 	}
 
+	// Wait for the EoN Node to establish an MQTT connection
+	eonNode.SessionHandler.MqttClient.AwaitConnection(eodNodeContext)
+
 	for _, device := range cfg.EoNNodeConfig.Devices {
 		deviceContext := context.Background()
 		// Instantiate a new device
@@ -70,6 +73,9 @@ func Run() {
 
 		// Attach the new device to the EoN Node
 		eonNode.AddDevice(eodNodeContext, newDevice, logger)
+
+		// Wait for the device to establish an MQTT connection
+		eonNode.SessionHandler.MqttClient.AwaitConnection(deviceContext)
 
 		// Add the defined simulated IoTSensors to the new device
 		for _, sim := range device.Simulators {

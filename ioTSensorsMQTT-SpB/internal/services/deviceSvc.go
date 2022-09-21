@@ -118,12 +118,13 @@ func NewDeviceInstance(
 						"Key":       key,
 					}).Infoln("Republishing unacknowledged messages.. 🔔")
 					// Keep retrying publishing the data to the broker until we get
-					// PUBACK or the TTL expires.
+					// PUBACK or the TTL to fire.
 					go d.publishSensorData(ctx, sensorId, value.Value(), log)
+					d.connMut.Lock()
+					d.CacheStore.Delete(key)
+					d.connMut.Unlock()
 				}
-				// Clear the in-memory store
-				d.CacheStore.DeleteAll()
-				CachedMsgs.Set(0)
+				CachedMsgs.Set(float64(d.CacheStore.Len()))
 			}
 
 			// Subscribe to device control commands
@@ -619,9 +620,9 @@ func (d *DeviceSvc) RunPublisher(ctx context.Context, log *logrus.Logger) *Devic
 // publishSensorData used by RunPublisher to prepare the payload of a sensor and publishes it to the broker.
 func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data simulators.SensorData, log *logrus.Logger) {
 	// Preventing race condition between goroutines on seq number.
-	d.connMut.RLock()
+	d.connMut.Lock()
 	data.Seq = d.GetNextDeviceSeqNum(log)
-	d.connMut.RUnlock()
+	d.connMut.Unlock()
 
 	if d.Simulators[sensorId] == nil {
 		return
@@ -669,11 +670,14 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 
 		if err != nil {
 			if d.Enabled {
+				// Preventing race condition on the map store / not safe thread.
+				d.connMut.Lock()
 				log.Infoln("New data point stored, expires at ",
 					d.CacheStore.Set(sensorId+":"+fmt.Sprintf("%d", time.Now().UnixMilli()),
 						data,
 						ttlcache.DefaultTTL).ExpiresAt().Local().String(), " 🔔",
 				)
+				d.connMut.Unlock()
 				CachedMsgs.Inc()
 
 				log.WithFields(logrus.Fields{
@@ -712,26 +716,7 @@ func (d *DeviceSvc) publishSensorData(ctx context.Context, sensorId string, data
 				"Sensor Id":  sensorId,
 				"Device Seq": data.Seq,
 			}).Infoln("✅ DDATA Published to the broker ✅")
-
-			// During the keepalive period, we may have cached messages that will not be published until
-			// the OnConnectionUp triggers again, to make sure we published all the cached messages:  
-			if d.Enabled && d.CacheStore.Len() > 0 {
-				for key, value := range d.CacheStore.Items() {
-					sensorId := strings.Split(key, ":")[0]
-					log.WithFields(logrus.Fields{
-						"Groupe Id": d.GroupId,
-						"Node Id":   d.NodeId,
-						"Device Id": d.DeviceId,
-						"Key":       key,
-					}).Infoln("Republishing unacknowledged messages.. 🔔")
-					// Keep retrying publishing the data to the broker until we get
-					// PUBACK or the TTL expires.
-					go d.publishSensorData(ctx, sensorId, value.Value(), log)
-				}
-				// Clear the in-memory store
-				d.CacheStore.DeleteAll()
-				CachedMsgs.Set(0)
-			}
+			CachedMsgs.Set(0)
 		}
 	}(ctx, cm)
 }
