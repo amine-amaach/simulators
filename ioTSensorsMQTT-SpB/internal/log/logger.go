@@ -23,16 +23,7 @@ func NewLogger(
 	}
 
 	switch level {
-	case "ERROR":
-		log.Level = logrus.ErrorLevel
-	case "TRACE":
-		log.Level = logrus.TraceLevel
-	case "DEBUG":
-		log.Level = logrus.DebugLevel
-	case "FATAL":
-		log.Level = logrus.FatalLevel
-	case "WARN":
-		log.Level = logrus.WarnLevel
+	
 	default:
 		log.Level = logrus.InfoLevel
 

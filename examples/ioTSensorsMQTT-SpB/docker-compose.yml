@@ -1,0 +1,142 @@
+version: "3.9"
+services:
+##########################################################
+########################## InfluxDB ######################
+##########################################################
+  influxdb:
+    image: influxdb:latest
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2:rwmqttSparkplugB
+    ports:
+      - "8086:8086"
+    networks:
+      - main-net
+    restart: unless-stopped
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=mypasswordmypasswordmypassword
+      - DOCKER_INFLUXDB_INIT_ORG=simulators-project
+      - DOCKER_INFLUXDB_INIT_BUCKET=simulators
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytokenmytokenmytoken
+    container_name: influxdb
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://influxdb:8086"]
+
+##########################################################
+########################## Grafana #######################
+##########################################################
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - main-net
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    # depends_on:
+    #   influxdb:
+    #     condition: service_healthy
+
+##########################################################
+################## EoN Nodes Sparkplug B #################
+##########################################################
+  eonNode:
+    image: amineamaach/sensors-sparkplugb:v1.0.0
+    restart: "no"
+    container_name: eonNode
+    hostname: IOTSensorsMQTT-spB
+    volumes:
+    - ./configs/config.json:/configs/config.json
+    ports:
+      - 8080:8080
+    networks:
+      - spB-net
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+
+##########################################################
+######################### NodeRed ########################
+##########################################################
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    environment:
+      - TZ=Africa/Casablanca
+    ports:
+      - "1880:1880"
+    networks:
+      - main-net
+      - nodered-net
+    volumes:
+      - ./nodered/data:/data
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+
+##########################################################
+####################### MQTT/EMQX ########################
+##########################################################
+  mqtt:
+    image:  emqx/emqx:4.3.8
+    ports:
+      - 1883:1883
+      - 8083:8083
+      - 18083:18083
+    networks:
+      - nodered-net
+      - spB-net
+    restart: unless-stopped
+    environment:
+      - EMQX_LOADED_PLUGINS=emqx_recon,emqx_retainer,emqx_management,emqx_dashboard,emqx_auth_mnesia
+      - EMQX_ALLOW_ANONYMOUS=true
+      - EMQX_ACL_NOMATCH=allow
+    container_name: mqtt
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://mqtt:18083"]
+  
+#########################################################
+######################## Prometheus #####################
+#########################################################
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    networks:
+      - main-net
+      - spB-net
+    depends_on:
+      - eonNode
+
+networks:
+  main-net:
+  emqx-net:
+  spB-net:
+  nodered-net:
+
+volumes:
+  prometheus_data: {}

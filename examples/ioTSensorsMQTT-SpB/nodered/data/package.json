@@ -1,0 +1,10 @@
+{
+    "name": "node-red-project",
+    "description": "IoTSensorsMQTT-SpB demo",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "node-red-contrib-influxdb": "~0.6.1",
+        "node-red-contrib-protobuf": "^1.1.1"
+    }
+}
