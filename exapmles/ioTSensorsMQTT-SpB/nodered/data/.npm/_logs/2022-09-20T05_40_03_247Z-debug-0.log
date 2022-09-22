@@ -1,0 +1,89 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@8.11.0
+2 info using node@v16.16.0
+3 timing npm:load:whichnode Completed in 0ms
+4 timing config:load:defaults Completed in 7ms
+5 timing config:load:file:/usr/local/lib/node_modules/npm/npmrc Completed in 2ms
+6 timing config:load:builtin Completed in 2ms
+7 warn config production Use `--omit=dev` instead.
+8 timing config:load:cli Completed in 5ms
+9 timing config:load:env Completed in 1ms
+10 timing config:load:file:/data/.npmrc Completed in 0ms
+11 timing config:load:project Completed in 17ms
+12 timing config:load:file:/usr/src/node-red/.npmrc Completed in 0ms
+13 timing config:load:user Completed in 1ms
+14 timing config:load:file:/usr/local/etc/npmrc Completed in 3ms
+15 timing config:load:global Completed in 4ms
+16 timing config:load:validate Completed in 0ms
+17 timing config:load:credentials Completed in 1ms
+18 timing config:load:setEnvs Completed in 1ms
+19 timing config:load Completed in 42ms
+20 timing npm:load:configload Completed in 42ms
+21 timing npm:load:mkdirpcache Completed in 1ms
+22 timing npm:load:mkdirplogs Completed in 0ms
+23 verbose title npm install node-red-contrib-gzip@0.0.3
+24 verbose argv "install" "--no-audit" "--no-update-notifier" "--no-fund" "--save" "--save-prefix" "~" "--production" "--engine-strict" "node-red-contrib-gzip@0.0.3"
+25 timing npm:load:setTitle Completed in 3ms
+26 timing config:load:flatten Completed in 7ms
+27 timing npm:load:display Completed in 11ms
+28 verbose logfile logs-max:10 dir:/data/.npm/_logs
+29 verbose logfile /data/.npm/_logs/2022-09-20T05_40_03_247Z-debug-0.log
+30 timing npm:load:logFile Completed in 12ms
+31 timing npm:load:timers Completed in 0ms
+32 timing npm:load:configScope Completed in 0ms
+33 timing npm:load Completed in 73ms
+34 timing arborist:ctor Completed in 2ms
+35 silly logfile done cleaning log files
+36 timing idealTree:init Completed in 90ms
+37 timing idealTree:userRequests Completed in 7ms
+38 silly idealTree buildDeps
+39 silly fetch manifest node-red-contrib-gzip@0.0.3
+40 timing arborist:ctor Completed in 0ms
+41 http fetch GET 200 https://registry.npmjs.org/node-red-contrib-gzip 1126ms (cache miss)
+42 silly placeDep ROOT node-red-contrib-gzip@0.0.3 OK for: node-red-project@0.0.1 want: 0.0.3
+43 silly fetch manifest pako@1.0.4
+44 silly fetch manifest text-encoding@^0.6.4
+45 http fetch GET 200 https://registry.npmjs.org/pako 134ms (cache miss)
+46 http fetch GET 200 https://registry.npmjs.org/text-encoding 877ms (cache miss)
+47 timing idealTree:#root Completed in 2023ms
+48 silly placeDep ROOT pako@1.0.4 OK for: node-red-contrib-gzip@0.0.3 want: 1.0.4
+49 silly placeDep ROOT text-encoding@0.6.4 OK for: node-red-contrib-gzip@0.0.3 want: ^0.6.4
+50 timing idealTree:node_modules/node-red-contrib-gzip Completed in 5ms
+51 timing idealTree:node_modules/pako Completed in 0ms
+52 timing idealTree:node_modules/text-encoding Completed in 1ms
+53 timing idealTree:buildDeps Completed in 2033ms
+54 timing idealTree:fixDepFlags Completed in 2ms
+55 timing idealTree Completed in 2136ms
+56 timing reify:loadTrees Completed in 2138ms
+57 timing reify:diffTrees Completed in 6ms
+58 silly reify moves {}
+59 timing reify:retireShallow Completed in 2ms
+60 timing reify:createSparse Completed in 2ms
+61 timing reify:trashOmits Completed in 0ms
+62 timing reify:loadBundles Completed in 0ms
+63 silly tarball no local data for text-encoding@https://registry.npmjs.org/text-encoding/-/text-encoding-0.6.4.tgz. Extracting by manifest.
+64 silly tarball no local data for pako@https://registry.npmjs.org/pako/-/pako-1.0.4.tgz. Extracting by manifest.
+65 silly tarball no local data for node-red-contrib-gzip@https://registry.npmjs.org/node-red-contrib-gzip/-/node-red-contrib-gzip-0.0.3.tgz. Extracting by manifest.
+66 http fetch GET 200 https://registry.npmjs.org/text-encoding/-/text-encoding-0.6.4.tgz 545ms (cache miss)
+67 warn deprecated text-encoding@0.6.4: no longer maintained
+68 timing reifyNode:node_modules/text-encoding Completed in 568ms
+69 http fetch GET 200 https://registry.npmjs.org/node-red-contrib-gzip/-/node-red-contrib-gzip-0.0.3.tgz 1316ms (cache miss)
+70 timing reifyNode:node_modules/node-red-contrib-gzip Completed in 1356ms
+71 http fetch GET 200 https://registry.npmjs.org/pako/-/pako-1.0.4.tgz 1781ms (cache miss)
+72 timing reifyNode:node_modules/pako Completed in 1808ms
+73 timing reify:unpack Completed in 1810ms
+74 timing reify:unretire Completed in 0ms
+75 timing build:queue Completed in 1ms
+76 timing build:deps Completed in 3ms
+77 timing build Completed in 3ms
+78 timing reify:build Completed in 3ms
+79 timing reify:trash Completed in 0ms
+80 timing reify:save Completed in 26ms
+81 timing reify Completed in 4007ms
+82 silly ADD node_modules/text-encoding
+83 silly ADD node_modules/pako
+84 silly ADD node_modules/node-red-contrib-gzip
+85 timing command:install Completed in 4017ms
+86 verbose exit 0
+87 timing npm Completed in 4288ms
+88 info ok

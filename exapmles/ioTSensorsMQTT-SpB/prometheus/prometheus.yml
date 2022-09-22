@@ -6,6 +6,6 @@ global:
 
 scrape_configs:
   - job_name: 'IoTSensors'
-    scrape_interval: 3s
+    scrape_interval: 1s
     static_configs:
-      - targets: ['mqttSparkplugB:8080']
+      - targets: ['eonNode:8080']

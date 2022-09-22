@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+//version: 0.1.7
+
+message Zaehler_Waerme { 
+	double timestamp = 1;
+	uint32 ID = 2;
+	float Vorlauftemperatur = 3;
+	float Ruecklauftemperatur = 4;
+	float Leistung = 5;
+	float Volumensstrom = 6;
+	float Arbeit = 7;
+	float Volumen = 8;
+	float Temperaturdifferenz = 9;
+	float Betriebszeit = 10;
+	float Signalstaerke = 11;
+	string geohash = 12;
+	string Bezug = 13;
+}
+
+message Zaehler_Gas { 
+	double timestamp = 1;
+	float ID = 2;
+	float Volumen = 3;
+	string Bezug = 4;
+}
+
+message Zaehler_Strom { 
+	double timestamp = 1;
+	float ID = 2;
+	string Bezug = 3;
+	float obis_180 = 4;
+	float obis_181 = 5;
+	float obis_182 = 6;
+	float obis_280 = 7;
+	float obis_281 = 8;
+	float obis_282 = 9;
+	float obis_170 = 10;
+	float obis_270 = 11;
+}
+
+message Speicher { 
+	double timestamp = 1;
+	float ID = 2;
+	float Ladung = 3;
+	float Temperatur_1 = 4;
+	float Temperatur_2 = 5;
+	float Temperatur_3 = 6;
+	float Temperatur_4 = 7;
+	float Temperatur_5 = 8;
+	float Temperatur_6 = 9;
+	float Temperatur_7 = 10;
+	float Temperatur_8 = 11;
+}
+
+message RMB { 
+	double timestamp = 1;
+	float ID = 2;
+	Speicher Speicher = 5;
+	float WT_Vorlauftemperatur = 6;
+	float WT_Ruecklauftemperatur = 7;
+	float Vorlauftemperatur = 8;
+	float Ruecklauftemperatur = 9;
+	float Temperatur_Motoroel = 11;
+	float Temperatur_Abgas = 12;
+	float Temperatur_Abgas_AWT = 13;
+	float Temperatur_Innenraum = 14;
+	float Wasserdruck = 15;
+	float Leistung = 16;
+	float Stromverbrauch = 17;
+	float Betriebsstunden = 18;
+	float WartungIn = 19;
+	float Drehzahl_P1 = 20;
+	float Drehzahl_P2 = 21;
+	float Modulation = 22;
+	float Netzfrequenz = 23;
+	bool Stoerung = 40;
+	bool AnforderungKessel = 41;
+	bool Stoerung_Gas = 42;
+	bool Stoerung_Netz = 43;
+	bool Stoerung_EVU_Sperred = 44;
+	bool Stellmotor_M1 = 45;
+	bool Stellmotor_M2 = 46;
+	bool Entladepumpe = 47;
+	bool Stoerung_Generatorschutz = 48;
+	bool Stoerung_Oeldruck = 49;
+	bool Stoerung_Oelmangel = 50;
+	bool Stoerung_Temperatur_Motor = 51;
+	bool Stoerung_Wasserueberdruck = 52;
+	bool Stoerung_Wasserunterdruck = 53;
+	bool Stoerung_Wassermangel = 54;
+	bool Stoerung_Temperatur_Vorlauf = 55;
+	bool Stoerung_Temperatur_Innenraum = 56;
+	bool Stoerung_Temperatur_Motoroel = 57;
+	bool Stoerung_Temperatur_Generator = 58;
+	bool Stoerung_Temperatur_Abgas = 59;
+	bool Stoerung_KeineLeistung = 60;
+	bool Stoerung_NotHalt = 61;
+	bool Stoerung_STB_Innenraum = 62;
+	bool Stoerung_STB_Abgas = 63;
+	bool Stoerung_Drehzahl = 64;
+	bool Stoerung_Fehlstart = 65;
+}
+
+message LPB { 
+	double timestamp = 1;
+	float ID = 2;
+	float LPB_8743 = 8743;
+	float LPB_8773 = 8773;
+	float LPB_8803 = 8803;
+	float LPB_8830 = 8830;
+	float LPB_8980 = 8980;
+	float LPB_8310 = 8310;
+	float LPB_8314 = 8314;
+	float LPB_8700 = 8700;
+	float LPB_741 = 741;
+	float LPB_742 = 742;
+	float LPB_1041 = 1041;
+	float LPB_1040 = 1040;
+	float LPB_8831 = 8831;
+	bool LPB_8730 = 8730;
+	bool LPB_8760 = 8760;
+	bool LPB_8790 = 8790;
+	bool LPB_8304 = 8304;
+}

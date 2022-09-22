@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message TestType { 
+	double timestamp = 1;
+	float foo = 2;
+	bool bar = 3;
+	string test = 4;
+}

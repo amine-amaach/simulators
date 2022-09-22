@@ -43,7 +43,7 @@
                         "standard_deviation": 2.3,
                         "delay_min": 4,
                         "delay_max": 10,
-                        "randomize": false
+                        "randomize": true
                     }
                 ]
             }
@@ -57,6 +57,4 @@
     },
     
     "enable_prometheus": true
-
-
 }

@@ -1,0 +1,35 @@
+{
+    "influxdb": {
+        "label": {
+            "host": "Host",
+            "port": "Port",
+            "database": "Database",
+            "measurement":"Medición",
+            "server":"Servidor",
+            "query":"Petición",
+            "use-tls": "Activar conexión (SSL/TLS) segura",
+            "tls-config":"Configuración TLS",
+            "use-raw-output":"Salida en crudo",
+            "time-precision":"Precisión",
+            "retention-policy":"Política de retención",
+            "use-advanced-query":"Opciones avanzadas",
+            "version":"Versión",
+            "url": "URL",
+            "token": "Token",
+            "reject-unauthorized": "Verificar el certificado del servidor",
+            "org": "Organización",
+            "bucket": "Bucket"
+        },
+        "errors":{
+            "nomeasurement":"No se ha especificado una medición",
+            "missingconfig":"Configuración incompleta",
+            "invalidconfig":"Configuration no válida",
+            "noquery":"No query"
+        },
+        "tip": {
+            "measurement": "<b> Consejo:</b> Si no se especifica una medición, asegúrate de que <b>msg.measurement</b> contiene el nombre de la medición.",
+            "retention-policy": "<b> Consejo:</b> Si no se especifica una política de retención, se asume <b>autogen</b>.",
+            "querytip": "<b> Consejo:</b> Si no se incluye una petición, asegúrate de que <b>msg.query</b> contiene una."
+        }
+    }
+}

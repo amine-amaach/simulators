@@ -1,0 +1,221 @@
+# Configured for 2.11.1
+extends: eslint:recommended
+env:
+  browser: true
+  node: true
+  mocha: true
+  jasmine: true
+  jquery: true
+  es6: true
+globals:
+  angular: true
+rules: # http://eslint.org/docs/rules/
+
+  # possible errors
+  comma-dangle: [2, 'only-multiline'] # require or disallow trailing commas
+  no-cond-assign: 2 # disallow assignment operators in conditional expressions
+  no-console: 0 # disallow the use of `console`
+  no-constant-condition: 2 # disallow constant expressions in conditions
+  no-control-regex: 2 # disallow control characters in regular expressions
+  no-debugger: 2 # disallow the use of `debugger`
+  no-dupe-args: 2 # disallow duplicate arguments in function definitions
+  no-dupe-keys: 2 # disallow duplicate keys in object literals
+  no-duplicate-case: 2 # disallow duplicate case labels
+  no-empty: 2 # disallow empty block statements
+  no-empty-character-class: 2 # disallow empty character classes in regular expressions
+  no-ex-assign: 2 # disallow reassigning exceptions in `catch` clauses
+  no-extra-boolean-cast: 2 # disallow unnecessary boolean casts
+  no-extra-parens: [1, all, {returnAssign: false, nestedBinaryExpressions: false}] # disallow unnecessary parentheses
+  no-extra-semi: 2 # disallow unnecessary semicolons
+  no-func-assign: 2 # disallow reassigning `function` declarations
+  no-inner-declarations: [2, functions] # disallow `function` or `var` declarations in nested blocks
+  no-invalid-regexp: 2 # disallow invalid regular expression strings in RegExp constructors
+  no-irregular-whitespace: 2 # disallow irregular whitespace outside of strings and comments
+  no-negated-in-lhs: 2 # disallow negating the left operand in `in` expressions
+  no-obj-calls: 2 # disallow calling the `Math` and `JSON` objects as functions,
+  no-prototype-builtins: 0 # Disallow use of `Object.prototypes` builtins directly
+  no-regex-spaces: 2 # disallow multiple spaces in regular expression literals
+  #no-sdecode-arrays: 2 # disallow sdecode arrays
+  no-unexpected-multiline: 2 # disallow confusing multiline expressions
+  no-unreachable: 2 # disallow unreachable code after `return`, `throw`, `continue`, and `break` statements
+  no-unsafe-finally: 1 # disallow control flow statements in `finally` blocks
+  use-isnan: 2 # require calls to `isNaN()` when checking for NaN
+  valid-jsdoc: 0 # enforce valid JSDoc comments
+  valid-typeof: 2 # enforce comparing `typeof` expressions against valid strings
+
+  # Best Practices
+  accessor-pairs: 2
+  block-scoped-var: 0
+  complexity: [2, 6]
+  consistent-return: 0
+  curly: [1, 'multi-line']
+  default-case: 0
+  dot-location: 0
+  dot-notation: 0
+  eqeqeq: [1, smart]
+  guard-for-in: 2
+  no-alert: 2
+  no-caller: 2
+  no-case-declarations: 2
+  no-div-regex: 2
+  no-else-return: 0
+  no-empty-pattern: 2
+  no-eq-null: 2
+  no-eval: 2
+  no-extend-native: 2
+  no-extra-bind: 2
+  no-fallthrough: 2
+  no-floating-decimal: 0
+  no-implicit-coercion: 0
+  no-implied-eval: 2
+  no-invalid-this: 0
+  no-iterator: 2
+  no-labels: 0
+  no-lone-blocks: 2
+  no-loop-func: 2
+  no-magic-number: 0
+  no-multi-spaces: 1
+  no-multi-str: 0
+  no-native-reassign: 2
+  no-new-func: 2
+  no-new-wrappers: 2
+  no-new: 2
+  no-octal-escape: 2
+  no-octal: 2
+  no-proto: 2
+  no-redeclare: 2
+  no-return-assign: 2
+  no-script-url: 2
+  no-self-compare: 2
+  no-sequences: 0
+  no-throw-literal: 0
+  no-unused-expressions: 2
+  no-useless-call: 2
+  no-useless-concat: 2
+  no-void: 2
+  no-warning-comments: 0
+  no-with: 2
+  radix: 2
+  vars-on-top: 0
+  wrap-iife: 2
+  yoda: 0
+
+  # Strict
+  strict: 0 # require or disallow strict mode directives
+
+  # Variables
+  init-declarations: 0 # require or disallow initialization in `var` declarations
+  no-catch-shadow: 2
+  no-delete-var: 2
+  no-label-var: 2
+  no-shadow-restricted-names: 2
+  no-shadow: 0
+  no-undef-init: 2
+  no-undef: 0
+  no-undefined: 0
+  no-unused-vars: [1, local]
+  no-use-before-define: [1, nofunc]
+
+  # Node.js and CommonJS
+  callback-return: 2
+  global-require: 2
+  handle-callback-err: 2
+  no-mixed-requires: 0
+  no-new-require: 0
+  no-path-concat: 2
+  no-process-exit: 0
+  no-restricted-modules: 0
+  no-sync: 0
+
+  # Stylistic Issues
+  array-bracket-spacing: 0
+  block-spacing: 0
+  brace-style: 0
+  camelcase: 0
+  comma-spacing: 1
+  comma-style: 0
+  computed-property-spacing: 0
+  consistent-this: 0
+  eol-last: 1
+  func-names: 0
+  func-style: 0
+  id-length: 0
+  id-match: 0
+  indent: 0
+  jsx-quotes: 0
+  key-spacing: [0, {align: value}]
+  keyword-spacing: 0
+  linebreak-style: 0
+  lines-around-comment: 0
+  max-depth: 0
+  max-len: 0
+  max-nested-callbacks: 0
+  max-params: 0
+  max-statements: [2, 30]
+  new-cap: 0
+  new-parens: 0
+  newline-after-var: 0
+  no-array-constructor: 0
+  no-bitwise: 0
+  no-continue: 0
+  no-inline-comments: 0
+  no-lonely-if: 0
+  no-mixed-spaces-and-tabs: [1, 'smart-tabs']
+  no-multiple-empty-lines: 0
+  no-negated-condition: 0
+  no-nested-ternary: 0
+  no-new-object: 0
+  no-plusplus: 0
+  no-restricted-syntax: 0
+  no-spaced-func: 0
+  no-ternary: 0
+  no-trailing-spaces: 1
+  no-underscore-dangle: 0
+  no-unneeded-ternary: 0
+  object-curly-spacing: 0
+  one-var: 0
+  operator-assignment: 0
+  operator-linebreak: 0
+  padded-blocks: 0
+  quote-props: 0
+  quotes: [1, single, 'avoid-escape']
+  require-jsdoc: 0
+  semi-spacing: 0
+  semi: 1
+  sort-vars: 0
+  space-before-blocks: 0
+  space-before-function-paren: 1
+  space-in-parens: 0
+  space-infix-ops: 0
+  space-unary-ops: 0
+  spaced-comment: 0
+  wrap-regex: 0
+
+  # ECMAScript 6
+  arrow-body-style: 0 # require braces around arrow function bodies
+  arrow-parens: 0 # require parentheses around arrow function arguments
+  arrow-spacing: 1 # enforce consistent spacing before and after the arrow in arrow functions
+  constructor-super: 2 # require `super()` calls in constructors
+  generator-star-spacing: 1 # enforce consistent spacing around `*` operators in generator functions
+  no-class-assign: 1 # disallow reassigning class members
+  no-confusing-arrow: 1 # disallow arrow functions where they could be confused with comparisons
+  no-const-assign: 2 # disallow reassigning `const` variables
+  no-dupe-class-members: 0 # disallow duplicate class members
+  no-duplicate-imports: 1 # disallow duplicate module imports
+  no-new-symbol: 1 # disallow `new` operators with the `Symbol` object
+  no-restricted-imports: 0 # disallow specified modules when loaded by `import`
+  no-this-before-super: 2 # disallow `this`/`super` before calling `super()` in constructors
+  no-useless-computed-key: 1 # disallow unnecessary computed property keys in object literals
+  no-useless-constructor: 1 # disallow unnecessary constructors
+  no-useless-rename: 1 # disallow renaming import, export, and destructured assignments to the same name
+  no-var: 0 # require `let` or `const` instead of var
+  object-shorthand: 0 # require or disallow method and property shorthand syntax for object literals
+  prefer-arrow-callback: 0 # require arrow functions as callbacks
+  prefer-const: 0 # require `const` declarations for variables that are never reassigned after declared
+  prefer-reflect: 0 # require `Reflect` methods where applicable
+  prefer-rest-params: 0 # require rest parameters instead of arguments
+  prefer-spread: 0 # require spread operators instead of `.apply()`
+  prefer-template: 0 # require template literals instead of string concatenation
+  require-yield: 2 # require generator functions to contain `yield`
+  sort-imports: 0 # enforce sorted import declarations within modules
+  template-curly-spacing: 0 # require or disallow spacing around embedded expressions of template strings

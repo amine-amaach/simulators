@@ -1,0 +1,8 @@
+syntax = "proto3";   
+message Viessmann {
+   double timestamp = 1;
+   float ID = 2;
+   float Leistungist = 3;
+   float Leistung_Ist = 4;
+   float Vorlauftemperatur_Kessel = 5;
+}

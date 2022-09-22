@@ -419,8 +419,8 @@
     "protobuf-fixed": {
         "name": "protobuf-fixed",
         "version": "1.0.3",
-        "local": false,
-        "user": false,
+        "local": true,
+        "user": true,
         "nodes": {
             "encode": {
                 "name": "encode",
@@ -428,10 +428,10 @@
                     "encode"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "protobuf-fixed",
-                "file": "/usr/src/node-red/node_modules/protobuf-fixed/src/nodes/encode.js"
+                "file": "/data/node_modules/protobuf-fixed/src/nodes/encode.js"
             },
             "decode": {
                 "name": "decode",
@@ -439,10 +439,10 @@
                     "decode"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "protobuf-fixed",
-                "file": "/usr/src/node-red/node_modules/protobuf-fixed/src/nodes/decode.js"
+                "file": "/data/node_modules/protobuf-fixed/src/nodes/decode.js"
             },
             "file": {
                 "name": "file",
@@ -450,10 +450,73 @@
                     "protobuf-file"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "protobuf-fixed",
-                "file": "/usr/src/node-red/node_modules/protobuf-fixed/src/nodes/protofile.js"
+                "file": "/data/node_modules/protobuf-fixed/src/nodes/protofile.js"
+            }
+        }
+    },
+    "node-red-contrib-influxdb": {
+        "name": "node-red-contrib-influxdb",
+        "version": "0.6.1",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "influxdb": {
+                "name": "influxdb",
+                "types": [
+                    "influxdb",
+                    "influxdb out",
+                    "influxdb batch",
+                    "influxdb in"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-influxdb",
+                "file": "/data/node_modules/node-red-contrib-influxdb/influxdb.js"
+            }
+        }
+    },
+    "node-red-contrib-protobuf": {
+        "name": "node-red-contrib-protobuf",
+        "version": "1.1.1",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "encode": {
+                "name": "encode",
+                "types": [
+                    "encode"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-protobuf",
+                "file": "/data/node_modules/node-red-contrib-protobuf/src/nodes/encode.js"
+            },
+            "decode": {
+                "name": "decode",
+                "types": [
+                    "decode"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-protobuf",
+                "file": "/data/node_modules/node-red-contrib-protobuf/src/nodes/decode.js"
+            },
+            "file": {
+                "name": "file",
+                "types": [
+                    "protobuf-file"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-protobuf",
+                "file": "/data/node_modules/node-red-contrib-protobuf/src/nodes/protofile.js"
             }
         }
     }

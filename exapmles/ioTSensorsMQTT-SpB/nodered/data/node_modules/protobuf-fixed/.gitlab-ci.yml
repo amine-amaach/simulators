@@ -1,0 +1,19 @@
+image: node:8
+
+linting:
+  script:
+    - npm install
+    - npm run lint
+
+unit test:
+  cache:
+    untracked: true
+    policy: pull
+  script:
+    - npm install
+    - npm test
+
+code coverage:
+  script:
+    - npm install
+    - npm run coverage

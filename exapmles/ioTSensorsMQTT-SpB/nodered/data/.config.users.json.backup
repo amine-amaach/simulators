@@ -6,7 +6,7 @@
                 "view-store-position": false,
                 "view-show-grid": true,
                 "view-snap-grid": true,
-                "view-grid-size": 20,
+                "view-grid-size": "20",
                 "view-node-status": true,
                 "view-node-show-label": true,
                 "view-show-tips": true,
@@ -15,6 +15,8 @@
             "tours": {
                 "welcome": "3.0.2"
             }
-        }
+        },
+        "menu-menu-item-palette": false,
+        "menu-menu-item-sidebar": false
     }
 }
