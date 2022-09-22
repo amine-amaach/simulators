@@ -41,9 +41,9 @@ services:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-    depends_on:
-      influxdb:
-        condition: service_healthy
+    # depends_on:
+    #   influxdb:
+    #     condition: service_healthy
 
 ##########################################################
 ################## EoN Nodes Sparkplug B #################

@@ -1,0 +1,420 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 5,
+  "iteration": 1663807462741,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": "InfluxDB",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 40,
+            "gradientMode": "hue",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "${simulator_id}",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 14,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max",
+            "sum"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "8.2.1",
+      "repeat": null,
+      "targets": [
+        {
+          "query": "from(bucket: \"simulators\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_data\")\n  //|> filter(fn: (r) => contains(value: r[\"_field\"], set: ${sensor_alias:json}))\n  |> filter(fn: (r) => r[\"_field\"] == \"${sensor_alias}\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "refId": "A"
+        }
+      ],
+      "title": "${simulator_id}",
+      "transparent": true,
+      "type": "timeseries"
+    },
+    {
+      "datasource": "InfluxDB",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Properties"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 530
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "namespace"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 197
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "group_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 205
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "node_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 195
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "device_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 283
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 4,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Properties"
+          }
+        ]
+      },
+      "pluginVersion": "8.2.1",
+      "targets": [
+        {
+          "query": "import \"strings\"\nfrom(bucket: \"simulators\")\n  |> range(start: -1d)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  //|> filter(fn: (r) => r[\"device_id\"] == \"emulatedDevice\")\n  |> filter(fn: (r) => contains(value: r[\"device_id\"], set: ${device_id:json}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> unique(column: \"device_id\")\n  |> group(columns: [\"device_id\"] )\n  |> drop(columns: [\"_time\", \"_start\", \"_stop\",\"_measurement\"])\n  |> filter(fn: (r) => not strings.hasSuffix(v: r._field, suffix: \"alias\"))\n  \n  |> rename(columns: {_field: \"Properties\", _value: \"Value\"})\n  |> group()\n",
+          "refId": "A"
+        }
+      ],
+      "title": "DBIRTH Certificates",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {
+              "Properties": 4,
+              "Value": 5,
+              "device_id": 3,
+              "group_id": 1,
+              "namespace": 0,
+              "node_id": 2
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "table"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 31,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "spBv1.0",
+          "value": "spBv1.0"
+        },
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "spBv1.0",
+            "value": "spBv1.0"
+          }
+        ],
+        "query": "spBv1.0",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "IoTSensors",
+          "value": "IoTSensors"
+        },
+        "datasource": "InfluxDB",
+        "definition": "from(bucket: \"simulators\")\n  |> range(start:-1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  |> filter(fn: (r) => r[\"namespace\"] == \"${namespace}\")\n  |> group()\n  |> keep(columns: [\"group_id\"])\n  |> unique(column: \"group_id\")",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Group",
+        "multi": false,
+        "name": "group_id",
+        "options": [],
+        "query": "from(bucket: \"simulators\")\n  |> range(start:-1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  |> filter(fn: (r) => r[\"namespace\"] == \"${namespace}\")\n  |> group()\n  |> keep(columns: [\"group_id\"])\n  |> unique(column: \"group_id\")",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "SparkplugB",
+          "value": "SparkplugB"
+        },
+        "datasource": "InfluxDB",
+        "definition": "from(bucket: \"simulators\")\n  |> range(start: -1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  |> filter(fn: (r) => r[\"group_id\"] == \"${group_id}\")\n  |> group()\n  |> keep(columns: [\"node_id\"])\n  |> unique(column: \"node_id\")",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "EoN Node",
+        "multi": false,
+        "name": "node_id",
+        "options": [],
+        "query": "from(bucket: \"simulators\")\n  |> range(start: -1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  |> filter(fn: (r) => r[\"group_id\"] == \"${group_id}\")\n  |> group()\n  |> keep(columns: [\"node_id\"])\n  |> unique(column: \"node_id\")",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": [
+            "emulatedDevice"
+          ],
+          "value": [
+            "emulatedDevice"
+          ]
+        },
+        "datasource": "InfluxDB",
+        "definition": "from(bucket: \"simulators\")\n  |> range(start: -1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  |> filter(fn: (r) => r[\"node_id\"] == \"${node_id}\")\n  |> group()\n  |> keep(columns: [\"device_id\"])\n  |> unique(column: \"device_id\")",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Device",
+        "multi": true,
+        "name": "device_id",
+        "options": [],
+        "query": "from(bucket: \"simulators\")\n  |> range(start: -1w)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n  |> filter(fn: (r) => r[\"node_id\"] == \"${node_id}\")\n  |> group()\n  |> keep(columns: [\"device_id\"])\n  |> unique(column: \"device_id\")",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "Temperature",
+          "value": "Temperature"
+        },
+        "datasource": "InfluxDB",
+        "definition": "import \"regexp\"\nimport \"strings\"\n\nregex = regexp.compile(v: \"^[^/]+/[^/]+[^/]+/[^/]+[^/].alias$\")\n\nalias =\n  from(bucket: \"simulators\")\n    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_data\")\n    |> keep(columns: [\"_field\"])\n    |> unique(column: \"_field\")\n    |> rename(columns: {_field: \"_value\"})\n\nlabels =\n  from(bucket: \"simulators\")\n    |> range(start: -1w)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n    |> filter(fn: (r) => contains(value: r[\"device_id\"], set: ${device_id:json}))\n    |> unique(column: \"_value\")\n    |> keep(columns: [\"_field\",\"_value\"])\n    |> filter(fn: (r) => regexp.matchRegexpString(r: regex, v: r._field))\n    |> map(fn: (r) => ({r with _field: strings.replace(v: r._field, t: \"_alias\", u: \"\", i: 1)}))\n    |> map(fn: (r) => ({r with _field: strings.split(v: r._field, t: \"/\")[2]}))\n\njoin(tables: {alias: alias, labels: labels}, on: [ \"_value\"])\n|> group(columns: [\"_field\"])\n|> last()\n|> group()",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Sensor",
+        "multi": false,
+        "name": "simulator_id",
+        "options": [],
+        "query": "import \"regexp\"\nimport \"strings\"\n\nregex = regexp.compile(v: \"^[^/]+/[^/]+[^/]+/[^/]+[^/].alias$\")\n\nalias =\n  from(bucket: \"simulators\")\n    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_data\")\n    |> keep(columns: [\"_field\"])\n    |> unique(column: \"_field\")\n    |> rename(columns: {_field: \"_value\"})\n\nlabels =\n  from(bucket: \"simulators\")\n    |> range(start: -1w)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n    |> filter(fn: (r) => contains(value: r[\"device_id\"], set: ${device_id:json}))\n    |> unique(column: \"_value\")\n    |> keep(columns: [\"_field\",\"_value\"])\n    |> filter(fn: (r) => regexp.matchRegexpString(r: regex, v: r._field))\n    |> map(fn: (r) => ({r with _field: strings.replace(v: r._field, t: \"_alias\", u: \"\", i: 1)}))\n    |> map(fn: (r) => ({r with _field: strings.split(v: r._field, t: \"/\")[2]}))\n\njoin(tables: {alias: alias, labels: labels}, on: [ \"_value\"])\n|> group(columns: [\"_field\"])\n|> last()\n|> group()",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": false,
+          "text": "6863",
+          "value": "6863"
+        },
+        "datasource": "InfluxDB",
+        "definition": "import \"regexp\"\nimport \"strings\"\n\nregex = regexp.compile(v: \"^[^/]+/[^/]+[^/]+/[^/]+[^/].alias$\")\n\nalias =\n  from(bucket: \"simulators\")\n    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_data\")\n    |> keep(columns: [\"_field\"])\n    |> unique(column: \"_field\")\n    |> rename(columns: {_field: \"_value\"})\n\nlabels =\n  from(bucket: \"simulators\")\n    |> range(start: -1w)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n    |> filter(fn: (r) => contains(value: r[\"device_id\"], set: ${device_id:json}))\n    |> unique(column: \"_value\")\n    |> keep(columns: [\"_field\",\"_value\"])\n    |> filter(fn: (r) => regexp.matchRegexpString(r: regex, v: r._field))\n    |> map(fn: (r) => ({r with _field: strings.replace(v: r._field, t: \"_alias\", u: \"\", i: 1)}))\n    |> map(fn: (r) => ({r with _field: strings.split(v: r._field, t: \"/\")[2]}))\n   // |> filter(fn: (r) => contains(value: r._field, set: ${simulator_id:json}))\n    |> filter(fn: (r) => r[\"_field\"] == \"${simulator_id}\")\n\njoin(tables: {alias: alias, labels: labels}, on: [ \"_value\"])\n|> group(columns: [\"_field\"])\n|> last()\n|> group()\n|> keep(columns: [\"_value\"])",
+        "description": null,
+        "error": null,
+        "hide": 2,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "sensor_alias",
+        "options": [],
+        "query": "import \"regexp\"\nimport \"strings\"\n\nregex = regexp.compile(v: \"^[^/]+/[^/]+[^/]+/[^/]+[^/].alias$\")\n\nalias =\n  from(bucket: \"simulators\")\n    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_data\")\n    |> keep(columns: [\"_field\"])\n    |> unique(column: \"_field\")\n    |> rename(columns: {_field: \"_value\"})\n\nlabels =\n  from(bucket: \"simulators\")\n    |> range(start: -1w)\n    |> filter(fn: (r) => r[\"_measurement\"] == \"devices_certs\")\n    |> filter(fn: (r) => contains(value: r[\"device_id\"], set: ${device_id:json}))\n    |> unique(column: \"_value\")\n    |> keep(columns: [\"_field\",\"_value\"])\n    |> filter(fn: (r) => regexp.matchRegexpString(r: regex, v: r._field))\n    |> map(fn: (r) => ({r with _field: strings.replace(v: r._field, t: \"_alias\", u: \"\", i: 1)}))\n    |> map(fn: (r) => ({r with _field: strings.split(v: r._field, t: \"/\")[2]}))\n   // |> filter(fn: (r) => contains(value: r._field, set: ${simulator_id:json}))\n    |> filter(fn: (r) => r[\"_field\"] == \"${simulator_id}\")\n\njoin(tables: {alias: alias, labels: labels}, on: [ \"_value\"])\n|> group(columns: [\"_field\"])\n|> last()\n|> group()\n|> keep(columns: [\"_value\"])",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "IoTSensors SparkplugB",
+  "uid": "oNI6q-nVz",
+  "version": 10
+}
