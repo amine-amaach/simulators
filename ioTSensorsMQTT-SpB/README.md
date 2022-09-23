@@ -43,13 +43,13 @@
 <!-- Table of Contents -->
 # 📒 Table of Contents
 
-- [✨ About the Project](#✨-about-the-project)
+- [✨ About the Project](#✨-About-the-project)
 - [⚙️ Configuration](#⚙️-Configuration)
 - [📎 Demo](#📎-Demo)
 - [💻 Development](#💻-Development)
 - [👋 Contact](#👋-contact)
-- [🤝 Contributing](#🤝-contributing)
-- [💎 Acknowledgements](#💎-acknowledgements)
+- [🤝 Contributing](#👋-Contributing)
+- [💎 Acknowledgements](#💎-Acknowledgements)
 
 <!-- About the Project -->
 ## ✨ About the Project
@@ -186,6 +186,12 @@
 
 ## 📎 Demo
 
+<br>
+
+  <img src="docs/IoTSensorsMQTT-SpB-Demo.png" alt="logo"/>
+
+<br>
+
 * The following [demo](https://github.com/amine-amaach/simulators/tree/main/exapmles/ioTSensorsMQTT-SpB) shows you how to run a full simulation of the EoN node with multiple attached devices and simulated IoT sensors.
   - We're using `NodeRed` as a Sparkplug client to decode the Sparkplug B payloads and store the data in `InfluxDB` for further analytics with `Grafana`.
   - Using `NodeRed`, we can send several commands to the EoN node and its devices, such as :
@@ -195,8 +201,8 @@
           - `Shutdown` command to gracefully shutdown the EoN node and the attached devices.
           - `AddDevice` command to add a device to the EoN node that is defined in a Sparkplug template.
           - `RemoveDevice` command to detach a device from the EoN node specified in a Sparkplug template.
-<br>
-         <img src="docs/NodeRed-EonNode.png" alt="logo"/>
+          
+          <img src="docs/NodeRed-EonNode.png" alt="logo"/>
       
       - For a device, we can send the following pre-defined commands :
           - `Rebirth` command to get the device birth certificate.
@@ -204,12 +210,12 @@
           - `AddSimulator` command to add a simulated IoT sensor to the device that is defined in a Sparkplug template.
           - `RemoveSimulator` command to remove a simulated IoT sensor from the device that is specified in a Sparkplug template.
           - `UpdateSimulator` command to update the parameters of a simulated IoT sensor attached to the device that are defined in a Sparkplug template.
-<br>
-        <img src="docs/NodeRed-Device.png" alt="logo"/>  
+          
+          <img src="docs/NodeRed-Device.png" alt="logo"/>  
 
   - In this demo we enable the metrics endpoint to monitor the microservice performance using `Prometheus` and `Grafana`.
-  - For the MQTT broker, we're using the open source `EMQX` broker in this demo.
-  - We're using a docker compose file to run all these services together with a single command.
+  - For the MQTT broker, we're using the open source `EMQX` broker.
+  - For deployment, we're using a docker compose file to run all these services together with a single command.
 
 * To run this demo, please make sure you have `Docker` installed in your machine, then clone/download this repository to your preferred location and change directory to `simulators/examples/ioTSensorsMQTT-SpB/`, run the following command : `docker compose up -d` and have fun.
 

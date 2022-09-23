@@ -32,15 +32,17 @@
 
 * An important part of software development is testing that the developed software does exactly what it is supposed to do.
 
-* However, in ***Industry 4.0***, it is often difficult to find appropriate test data. Therefore, this project provides developers with simulators to realistically simulate ***IoT data*** over different protocols.
+* However, it is often difficult to find appropriate test data. Therefore, this project provides developers with simulators to realistically simulate ***IoT data*** over different protocols.
 
 > Available simulators : 
 
-  * [pgmqtt](https://github.com/amine-amaach/simulators/tree/main/pgmqtt)
+  * [IoTSensorsMQTT-SpB](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsMQTT-SpB) IoT Sensors data simulator via Sparkplug B.
+ 
+  * [IoTSensorsMQTT](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsMQTT) IoT Sensors data simulator via MQTT.
   
-  * [IoTSensorsMQTT](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsMQTT)
+  * [IoTSensorsOPCUA](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsOPCUA) IoT Sensors data simulator via OPCUA.
 
-  * [IoTSensorsOPCUA](https://github.com/amine-amaach/simulators/tree/main/ioTSensorsOPCUA)
+  * [pgmqtt](https://github.com/amine-amaach/simulators/tree/main/pgmqtt) Power-generator data simulator via MQTT.
 
 <!-- License -->
 ## ⚠️ License
