@@ -41,9 +41,9 @@ services:
       - ./grafana/provisioning/:/etc/grafana/provisioning/
       - ./grafana/dashboards/:/var/lib/grafana/dashboards/
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-    # depends_on:
-    #   influxdb:
-    #     condition: service_healthy
+    depends_on:
+      influxdb:
+        condition: service_healthy
 
 ##########################################################
 ################## EoN Nodes Sparkplug B #################
@@ -60,6 +60,8 @@ services:
     networks:
       - spB-net
     depends_on:
+      nodered:
+        condition: service_healthy
       influxdb:
         condition: service_healthy
       mqtt:
@@ -80,11 +82,17 @@ services:
       - nodered-net
     volumes:
       - ./nodered/data:/data
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      test: ["CMD", "curl", "-f", "http://nodered:1880"]
     depends_on:
       influxdb:
         condition: service_healthy
       mqtt:
         condition: service_healthy
+
 
 ##########################################################
 ####################### MQTT/EMQX ########################
