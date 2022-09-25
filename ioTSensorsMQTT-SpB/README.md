@@ -43,13 +43,13 @@
 <!-- Table of Contents -->
 # 📒 Table of Contents
 
-- [✨ About the Project](#✨-About-the-project)
-- [⚙️ Configuration](#⚙️-Configuration)
-- [📎 Demo](#📎-Demo)
-- [💻 Development](#💻-Development)
+- [✨ About the Project](#✨-about-the-project)
+- [⚙️ Configuration](#⚙️-configuration)
+- [📎 Demo](#📎-demo)
+- [💻 Development](#💻-development)
 - [👋 Contact](#👋-contact)
-- [🤝 Contributing](#👋-Contributing)
-- [💎 Acknowledgements](#💎-Acknowledgements)
+- [🤝 Contributing](#🤝-contributing)
+- [💎 Acknowledgements](#💎-acknowledgements)
 
 <!-- About the Project -->
 ## ✨ About the Project
@@ -232,9 +232,7 @@
     <img src="docs/Demo04.png" alt="logo"/>  
 
 
-* Or watch the following video :
-
-### TODO
+* Or watch the following video on YouTube : [MQTT Sparkplug B data simulator](https://youtu.be/dfqTsJFMq_w)
 
 * Please let me know if you're using this project and I'm looking forward to your feedback.
 
@@ -260,7 +258,7 @@ _And Happy Coding_
 
 <br>
 
-## 🤝 Contact
+## 👋 Contact
 
 <br>
 
@@ -272,7 +270,7 @@ Project Link : [https://github.com/amine-amaach/simulators.git](https://github.c
 
 <br>
 
-## 👋 Contributing
+## 🤝 Contributing
 
 <br>
 
