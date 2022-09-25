@@ -186,11 +186,15 @@
 
 ## 📎 Demo
 
+* Demo video : [MQTT Sparkplug B data simulator](https://youtu.be/dfqTsJFMq_w)
+
+
 <br>
 
   <img src="docs/IoTSensorsMQTT-SpB-Demo.png" alt="logo"/>
 
 <br>
+
 
 * The following [demo](https://github.com/amine-amaach/simulators/tree/main/exapmles/ioTSensorsMQTT-SpB) shows you how to run a full simulation of the EoN node with multiple attached devices and simulated IoT sensors.
   - We're using `NodeRed` as a Sparkplug client to decode the Sparkplug B payloads and store the data in `InfluxDB` for further analytics with `Grafana`.
@@ -230,9 +234,6 @@
     <img src="docs/Demo03.png" alt="logo"/>
 
     <img src="docs/Demo04.png" alt="logo"/>  
-
-
-* Or watch the following video on YouTube : [MQTT Sparkplug B data simulator](https://youtu.be/dfqTsJFMq_w)
 
 * Please let me know if you're using this project and I'm looking forward to your feedback.
 
