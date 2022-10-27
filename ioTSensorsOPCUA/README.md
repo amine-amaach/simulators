@@ -128,7 +128,7 @@
 
 * Docker is the recommended way to use the simulator. 
 
-  > A Docker image of the simulator is available : `docker pull amineamaach/simulators-pgmqtt`.
+  > A Docker image of the simulator is available : `docker pull amineamaach/sensors-opcua`.
 
 <div align="center"> 
   <img src="docs/ioTSensorsOPCUA-Demo.png" alt="pgmqtt-example" />
