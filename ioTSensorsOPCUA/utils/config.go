@@ -27,6 +27,7 @@ type Config struct {
 }
 type Certificate struct {
 	AdditionalHosts []string `mapstructure:"HOSTS"`
+	AdditionalIPs   []string `mapstructure:"IPS"`
 }
 
 func GetConfig() Config {
@@ -86,6 +87,7 @@ func setDefault(v *viper.Viper) {
 	})
 	v.SetDefault("CERTIFICATE", Certificate{
 		AdditionalHosts: []string{},
+		AdditionalIPs:   []string{},
 	})
 }
 

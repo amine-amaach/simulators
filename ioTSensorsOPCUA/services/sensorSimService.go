@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/utils"
 
 	"github.com/awcullen/opcua/server"
 	"github.com/awcullen/opcua/ua"
@@ -14,12 +15,12 @@ type SensorSimService struct {
 	Srv     *UaSrvService
 }
 
-func NewSensorSimService(host string, port int, userIds []ua.UserNameIdentity, additionalHosts *[]string) *SensorSimService {
+func NewSensorSimService(host string, port int, userIds []ua.UserNameIdentity, certificateAdditions *utils.Certificate) *SensorSimService {
 	return &SensorSimService{
 		host:    host,
 		port:    port,
 		userIds: userIds,
-		Srv:     NewUaSrvService(host, port, userIds, additionalHosts),
+		Srv:     NewUaSrvService(host, port, userIds, certificateAdditions),
 	}
 }
 
