@@ -19,10 +19,14 @@ type params struct {
 }
 
 type Config struct {
-	UserIds                          []UserIds `mapstructure:"USERIDs"`
-	SET_DELAY_BETWEEN_MESSAGES       int       `mapstructure:"SET_DELAY_BETWEEN_MESSAGES"`
-	RANDOMIZE_DELAY_BETWEEN_MESSAGES bool      `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
-	SimulatorsParams                 []params  `mapstructure:"SIMULATORS"`
+	UserIds                          []UserIds   `mapstructure:"USERIDs"`
+	SET_DELAY_BETWEEN_MESSAGES       int         `mapstructure:"SET_DELAY_BETWEEN_MESSAGES"`
+	RANDOMIZE_DELAY_BETWEEN_MESSAGES bool        `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
+	SimulatorsParams                 []params    `mapstructure:"SIMULATORS"`
+	Certificate                      Certificate `mapstructure:"CERTIFICATE"`
+}
+type Certificate struct {
+	AdditionalHosts []string `mapstructure:"HOSTS"`
 }
 
 func GetConfig() Config {
@@ -79,6 +83,9 @@ func setDefault(v *viper.Viper) {
 			Mean:              13.0,
 			StandardDeviation: 3.0,
 		},
+	})
+	v.SetDefault("CERTIFICATE", Certificate{
+		AdditionalHosts: []string{},
 	})
 }
 
