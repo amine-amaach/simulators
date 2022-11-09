@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/utils"
 	"log"
 	"math/big"
 	"net"
@@ -28,8 +29,8 @@ func (uaServer UaSrvService) GetServer() *server.Server {
 	return uaServer.server
 }
 
-func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity, additionalHosts *[]string) *UaSrvService {
-	srv, err := createUaServer(host, port, userIds, additionalHosts)
+func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity, certificateAdditions *utils.Certificate) *UaSrvService {
+	srv, err := createUaServer(host, port, userIds, certificateAdditions)
 	if err != nil {
 		// log
 		os.Exit(1)
@@ -55,8 +56,8 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity, addit
 	return &UaSrvService{server: srv}
 }
 
-func createUaServer(host string, port int, userIds []ua.UserNameIdentity, additionalHosts *[]string) (*server.Server, error) {
-	if err := ensurePKI(additionalHosts); err != nil {
+func createUaServer(host string, port int, userIds []ua.UserNameIdentity, certificateAdditions *utils.Certificate) (*server.Server, error) {
+	if err := ensurePKI(certificateAdditions); err != nil {
 		log.Println(err)
 	}
 	// create the endpoint url from hostname and port
@@ -118,7 +119,7 @@ func encryptPasswords(userIds []ua.UserNameIdentity) {
 	}
 }
 
-func ensurePKI(additionalHosts *[]string) error {
+func ensurePKI(certificateAdditions *utils.Certificate) error {
 
 	// check if ../uaServerCerts/pki already exists
 	if _, err := os.Stat("./uaServerCerts/pki"); !os.IsNotExist(err) {
@@ -131,14 +132,14 @@ func ensurePKI(additionalHosts *[]string) error {
 	}
 
 	// create a server certificate
-	if err := createNewCertificate("IoTSensorsUaServer", additionalHosts); err != nil {
+	if err := createNewCertificate("IoTSensorsUaServer", certificateAdditions); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func createNewCertificate(appName string, additionalHosts *[]string) error {
+func createNewCertificate(appName string, certificateAdditions *utils.Certificate) error {
 	host, _ := os.Hostname()
 	// create a key pair.
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -165,10 +166,21 @@ func createNewCertificate(appName string, additionalHosts *[]string) error {
 	subjectKeyHash.Write(key.PublicKey.N.Bytes())
 	subjectKeyId := subjectKeyHash.Sum(nil)
 
-	var dnsNames = make([]string, 0, len(*additionalHosts)+1)
+	var dnsNames = make([]string, 0, len(certificateAdditions.AdditionalHosts)+1)
 	dnsNames = append(dnsNames, host)
-	for _, h := range *additionalHosts {
+	for _, h := range certificateAdditions.AdditionalHosts {
 		dnsNames = append(dnsNames, h)
+	}
+
+	var ipAddresses = make([]net.IP, 0, len(certificateAdditions.AdditionalIPs)+1)
+	ipAddresses = append(ipAddresses, localAddr.IP)
+	for _, ipString := range certificateAdditions.AdditionalIPs {
+		ip := net.ParseIP(ipString)
+		if ip == nil {
+			fmt.Println(utils.Colorize(fmt.Sprintf("Invalid IP %s", ipString), utils.Red))
+			continue
+		}
+		ipAddresses = append(ipAddresses, ip)
 	}
 
 	template := x509.Certificate{
@@ -182,7 +194,7 @@ func createNewCertificate(appName string, additionalHosts *[]string) error {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
 		DNSNames:              dnsNames,
-		IPAddresses:           []net.IP{localAddr.IP},
+		IPAddresses:           ipAddresses,
 		URIs:                  []*url.URL{applicationURI},
 	}
 
