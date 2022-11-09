@@ -14,12 +14,12 @@ type SensorSimService struct {
 	Srv     *UaSrvService
 }
 
-func NewSensorSimService(host string, port int, userIds []ua.UserNameIdentity) *SensorSimService {
+func NewSensorSimService(host string, port int, userIds []ua.UserNameIdentity, additionalHosts *[]string) *SensorSimService {
 	return &SensorSimService{
 		host:    host,
 		port:    port,
 		userIds: userIds,
-		Srv:     NewUaSrvService(host, port, userIds),
+		Srv:     NewUaSrvService(host, port, userIds, additionalHosts),
 	}
 }
 
@@ -34,7 +34,7 @@ func (sensorSim SensorSimService) CreateNewVariableNode(nsi uint16, nodeName str
 			{
 				ReferenceTypeID: ua.ReferenceTypeIDHasProperty,
 				IsInverse:       true,
-				TargetID:        ua.ExpandedNodeID{NodeID: ua.NodeIDString{NamespaceIndex: nsi,ID: "IoTSensors"}},
+				TargetID:        ua.ExpandedNodeID{NodeID: ua.NodeIDString{NamespaceIndex: nsi, ID: "IoTSensors"}},
 			},
 		},
 		ua.DataValue{},

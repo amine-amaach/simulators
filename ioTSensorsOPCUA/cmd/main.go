@@ -56,7 +56,7 @@ ______________________________________________________________________________O/
 
 	// Initiate a sensor simulator service
 	hn, _ := os.Hostname()
-	sensorSim := services.NewSensorSimService(hn, 46010, USERIDs)
+	sensorSim := services.NewSensorSimService(hn, 46010, USERIDs, &configs.Certificate.AdditionalHosts)
 	nm := sensorSim.Srv.GetServer().NamespaceManager()
 	nsi := nm.Add("http://github.com/amine-amaach/simulators/ioTSensorsOPCUA")
 
@@ -116,7 +116,7 @@ ______________________________________________________________________________O/
 		return randChannel
 	}
 
-	simulator := func(ctx context.Context, sen sensor, wg sync.WaitGroup) {
+	simulator := func(ctx context.Context, sen sensor, wg *sync.WaitGroup) {
 		randChannel := randIt(ctx)
 		go func(sen sensor) {
 			defer wg.Done()
@@ -137,7 +137,7 @@ ______________________________________________________________________________O/
 	}
 
 	for key, sen := range sensors {
-		simulator(context.Background(), sen, wg)
+		simulator(context.Background(), sen, &wg)
 		log.Println(utils.Colorize(fmt.Sprintf("🏷️  Publishing %s IoT sensor data ...", key), utils.Green))
 	}
 

@@ -28,8 +28,8 @@ func (uaServer UaSrvService) GetServer() *server.Server {
 	return uaServer.server
 }
 
-func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity) *UaSrvService {
-	srv, err := createUaServer(host, port, userIds)
+func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity, additionalHosts *[]string) *UaSrvService {
+	srv, err := createUaServer(host, port, userIds, additionalHosts)
 	if err != nil {
 		// log
 		os.Exit(1)
@@ -55,8 +55,8 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity) *UaSr
 	return &UaSrvService{server: srv}
 }
 
-func createUaServer(host string, port int, userIds []ua.UserNameIdentity) (*server.Server, error) {
-	if err := ensurePKI(); err != nil {
+func createUaServer(host string, port int, userIds []ua.UserNameIdentity, additionalHosts *[]string) (*server.Server, error) {
+	if err := ensurePKI(additionalHosts); err != nil {
 		log.Println(err)
 	}
 	// create the endpoint url from hostname and port
@@ -118,7 +118,7 @@ func encryptPasswords(userIds []ua.UserNameIdentity) {
 	}
 }
 
-func ensurePKI() error {
+func ensurePKI(additionalHosts *[]string) error {
 
 	// check if ../uaServerCerts/pki already exists
 	if _, err := os.Stat("./uaServerCerts/pki"); !os.IsNotExist(err) {
@@ -131,14 +131,14 @@ func ensurePKI() error {
 	}
 
 	// create a server certificate
-	if err := createNewCertificate("IoTSensorsUaServer"); err != nil {
+	if err := createNewCertificate("IoTSensorsUaServer", additionalHosts); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func createNewCertificate(appName string) error {
+func createNewCertificate(appName string, additionalHosts *[]string) error {
 	host, _ := os.Hostname()
 	// create a key pair.
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -165,6 +165,12 @@ func createNewCertificate(appName string) error {
 	subjectKeyHash.Write(key.PublicKey.N.Bytes())
 	subjectKeyId := subjectKeyHash.Sum(nil)
 
+	var dnsNames = make([]string, 0, len(*additionalHosts)+1)
+	dnsNames = append(dnsNames, host)
+	for _, h := range *additionalHosts {
+		dnsNames = append(dnsNames, h)
+	}
+
 	template := x509.Certificate{
 		SerialNumber:          serialNumber,
 		Subject:               pkix.Name{CommonName: appName},
@@ -175,7 +181,7 @@ func createNewCertificate(appName string) error {
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageContentCommitment | x509.KeyUsageKeyEncipherment | x509.KeyUsageDataEncipherment | x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
-		DNSNames:              []string{host},
+		DNSNames:              dnsNames,
 		IPAddresses:           []net.IP{localAddr.IP},
 		URIs:                  []*url.URL{applicationURI},
 	}
