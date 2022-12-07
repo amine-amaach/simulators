@@ -11,7 +11,6 @@ import (
 	"log"
 	"math/big"
 	"net"
-	"net/url"
 	"os"
 	"time"
 
@@ -161,7 +160,7 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// create a certificate.
-	applicationURI, _ := url.Parse(fmt.Sprintf("urn:%s:%s", host, appName))
+	// applicationURI, _ := url.Parse(fmt.Sprintf("urn:%s:%s", host, appName))
 	serialNumber, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	subjectKeyHash := sha1.New()
 	subjectKeyHash.Write(key.PublicKey.N.Bytes())
