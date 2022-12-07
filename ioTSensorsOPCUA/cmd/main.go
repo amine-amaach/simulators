@@ -55,7 +55,8 @@ ______________________________________________________________________________O/
 	}
 
 	// Initiate a sensor simulator service
-	hn, _ := os.Hostname()
+	// create new variable hn, which equals to configs.Host
+	hn := configs.Host
 	sensorSim := services.NewSensorSimService(hn, 46010, USERIDs, &configs.Certificate)
 	nm := sensorSim.Srv.GetServer().NamespaceManager()
 	nsi := nm.Add("http://github.com/amine-amaach/simulators/ioTSensorsOPCUA")

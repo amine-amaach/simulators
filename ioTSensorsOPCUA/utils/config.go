@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -24,6 +25,7 @@ type Config struct {
 	RANDOMIZE_DELAY_BETWEEN_MESSAGES bool        `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
 	SimulatorsParams                 []params    `mapstructure:"SIMULATORS"`
 	Certificate                      Certificate `mapstructure:"CERTIFICATE"`
+	Hosts                            string      `mapstructure:"HOSTS"`
 }
 type Certificate struct {
 	AdditionalHosts []string `mapstructure:"HOSTS"`
@@ -89,6 +91,8 @@ func setDefault(v *viper.Viper) {
 		AdditionalHosts: []string{},
 		AdditionalIPs:   []string{},
 	})
+	hn, _ := os.Hostname()
+	v.SetDefault("HOST", hn)
 }
 
 // Foreground colors.
