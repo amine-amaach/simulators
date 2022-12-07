@@ -66,6 +66,7 @@ ______________________________________________________________________________O/
 		desc := utils.Colorize(sensorSim.Srv.GetServer().LocalDescription().ApplicationName.Text, utils.Magenta)
 		endpoint := utils.Colorize(sensorSim.Srv.GetServer().EndpointURL(), utils.Cyan)
 		log.Printf("%s '%s' at '%s'\n", utils.Colorize("Starting server ", utils.Cyan), desc, endpoint)
+		log.Printf("Hostname: %s", hn)
 		err := sensorSim.Srv.GetServer().ListenAndServe()
 		if err != ua.BadServerHalted {
 			log.Println(errors.Wrap(err, "Error starting server"))
