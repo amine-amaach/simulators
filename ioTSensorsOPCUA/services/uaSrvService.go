@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/big"
 	"net"
+	"net/url"
 	"os"
 	"time"
 
@@ -57,7 +58,7 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity, certi
 }
 
 func createUaServer(host string, port int, userIds []ua.UserNameIdentity, certificateAdditions *utils.Certificate) (*server.Server, error) {
-	if err := ensurePKI(certificateAdditions); err != nil {
+	if err := ensurePKI(certificateAdditions, host); err != nil {
 		log.Println(err)
 	}
 	// create the endpoint url from hostname and port
@@ -119,7 +120,7 @@ func encryptPasswords(userIds []ua.UserNameIdentity) {
 	}
 }
 
-func ensurePKI(certificateAdditions *utils.Certificate) error {
+func ensurePKI(certificateAdditions *utils.Certificate, host string) error {
 
 	// check if ../uaServerCerts/pki already exists
 	if _, err := os.Stat("./uaServerCerts/pki"); !os.IsNotExist(err) {
@@ -132,15 +133,14 @@ func ensurePKI(certificateAdditions *utils.Certificate) error {
 	}
 
 	// create a server certificate
-	if err := createNewCertificate("IoTSensorsUaServer", certificateAdditions); err != nil {
+	if err := createNewCertificate("IoTSensorsUaServer", certificateAdditions, host); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func createNewCertificate(appName string, certificateAdditions *utils.Certificate) error {
-	host, _ := os.Hostname()
+func createNewCertificate(appName string, certificateAdditions *utils.Certificate, host string) error {
 	// create a key pair.
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -160,7 +160,7 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// create a certificate.
-	// applicationURI, _ := url.Parse(fmt.Sprintf("urn:%s:%s", host, appName))
+	applicationURI, _ := url.Parse(fmt.Sprintf("urn:%s:%s", host, appName))
 	serialNumber, _ := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	subjectKeyHash := sha1.New()
 	subjectKeyHash.Write(key.PublicKey.N.Bytes())
@@ -183,20 +183,20 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 		ipAddresses = append(ipAddresses, ip)
 	}
 
-	// uris := []*url.URL{applicationURI}
-	// for _, h := range certificateAdditions.AdditionalHosts {
-	// 	u, e := url.Parse(fmt.Sprintf("urn:%s:%s", h, appName))
-	// 	if e != nil {
-	// 		continue
-	// 	}
-	// 	uris = append(uris, u)
-	// 	// Commented out because some OPC-UA clients don't like this
-	// 	// u, e = url.Parse(fmt.Sprintf("urn:%s", h))
-	// 	// if e != nil {
-	// 	// 	continue
-	// 	// }
-	// 	// uris = append(uris, u)
-	// }
+	uris := []*url.URL{applicationURI}
+	for _, h := range certificateAdditions.AdditionalHosts {
+		u, e := url.Parse(fmt.Sprintf("urn:%s:%s", h, appName))
+		if e != nil {
+			continue
+		}
+		uris = append(uris, u)
+		// Commented out because some OPC-UA clients don't like this
+		// u, e = url.Parse(fmt.Sprintf("urn:%s", h))
+		// if e != nil {
+		// 	continue
+		// }
+		// uris = append(uris, u)
+	}
 
 	template := x509.Certificate{
 		SerialNumber:          serialNumber,
@@ -210,7 +210,7 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 		BasicConstraintsValid: true,
 		DNSNames:              dnsNames,
 		IPAddresses:           ipAddresses,
-		// URIs:                  uris,
+		URIs:                  uris,
 	}
 
 	rawcrt, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
