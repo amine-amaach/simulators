@@ -184,20 +184,20 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 		ipAddresses = append(ipAddresses, ip)
 	}
 
-	uris := []*url.URL{applicationURI}
-	for _, h := range certificateAdditions.AdditionalHosts {
-		u, e := url.Parse(fmt.Sprintf("urn:%s:%s", h, appName))
-		if e != nil {
-			continue
-		}
-		uris = append(uris, u)
-		// Commented out because some OPC-UA clients don't like this
-		// u, e = url.Parse(fmt.Sprintf("urn:%s", h))
-		// if e != nil {
-		// 	continue
-		// }
-		// uris = append(uris, u)
-	}
+	// uris := []*url.URL{applicationURI}
+	// for _, h := range certificateAdditions.AdditionalHosts {
+	// 	u, e := url.Parse(fmt.Sprintf("urn:%s:%s", h, appName))
+	// 	if e != nil {
+	// 		continue
+	// 	}
+	// 	uris = append(uris, u)
+	// 	// Commented out because some OPC-UA clients don't like this
+	// 	// u, e = url.Parse(fmt.Sprintf("urn:%s", h))
+	// 	// if e != nil {
+	// 	// 	continue
+	// 	// }
+	// 	// uris = append(uris, u)
+	// }
 
 	template := x509.Certificate{
 		SerialNumber:          serialNumber,
@@ -211,7 +211,7 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 		BasicConstraintsValid: true,
 		DNSNames:              dnsNames,
 		IPAddresses:           ipAddresses,
-		URIs:                  uris,
+		// URIs:                  uris,
 	}
 
 	rawcrt, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
