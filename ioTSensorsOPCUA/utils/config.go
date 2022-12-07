@@ -25,7 +25,7 @@ type Config struct {
 	RANDOMIZE_DELAY_BETWEEN_MESSAGES bool        `mapstructure:"RANDOMIZE_DELAY_BETWEEN_MESSAGES"`
 	SimulatorsParams                 []params    `mapstructure:"SIMULATORS"`
 	Certificate                      Certificate `mapstructure:"CERTIFICATE"`
-	Hosts                            string      `mapstructure:"HOSTS"`
+	Host                             string      `mapstructure:"HOST"`
 }
 type Certificate struct {
 	AdditionalHosts []string `mapstructure:"HOSTS"`
