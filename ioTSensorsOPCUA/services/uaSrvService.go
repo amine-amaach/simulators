@@ -8,13 +8,14 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/utils"
 	"log"
 	"math/big"
 	"net"
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/utils"
 
 	"github.com/awcullen/opcua/server"
 	"github.com/awcullen/opcua/ua"
@@ -190,11 +191,12 @@ func createNewCertificate(appName string, certificateAdditions *utils.Certificat
 			continue
 		}
 		uris = append(uris, u)
-		u, e = url.Parse(fmt.Sprintf("urn:%s", h))
-		if e != nil {
-			continue
-		}
-		uris = append(uris, u)
+		// Commented out because some OPC-UA clients don't like this
+		// u, e = url.Parse(fmt.Sprintf("urn:%s", h))
+		// if e != nil {
+		// 	continue
+		// }
+		// uris = append(uris, u)
 	}
 
 	template := x509.Certificate{
