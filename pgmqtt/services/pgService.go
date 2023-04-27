@@ -100,7 +100,7 @@ func (svc *pgService) initPG(pg *models.Generator, pgNumber int) {
 
 // buildPublishTopicString() builds a power-generator publish topics.
 func (svc *pgService) buildPublishTopicString(g *models.Generator, cfg *utils.Config) {
-	rootTopic := strings.Join([]string{cfg.Site, cfg.Area, "Power-Generators"}, "/")
+	rootTopic := strings.Join([]string{cfg.Site, cfg.Area, "Power_Generators"}, "/")
 	g.GeneratorTopic = strings.Join([]string{rootTopic, g.GeneratorID}, "/")
 	g.Load.ItemTopic = strings.Join([]string{rootTopic, g.GeneratorID, g.Load.ItemName}, "/")
 	g.Temperature.ItemTopic = strings.Join([]string{rootTopic, g.GeneratorID, g.Temperature.ItemName}, "/")
