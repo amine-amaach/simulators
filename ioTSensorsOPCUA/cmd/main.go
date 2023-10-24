@@ -67,6 +67,14 @@ ______________________________________________________________________________O/
 		endpoint := utils.Colorize(sensorSim.Srv.GetServer().EndpointURL(), utils.Cyan)
 		log.Printf("%s '%s' at '%s'\n", utils.Colorize("Starting server ", utils.Cyan), desc, endpoint)
 		log.Printf("Hostname: %s", hn)
+		log.Printf("Additional Hosts")
+		for i, host := range configs.Certificate.AdditionalHosts {
+			log.Printf("  Host %d: %s", i, host)
+		}
+		log.Printf("Additional IPs")
+		for i, ip := range configs.Certificate.AdditionalIPs {
+			log.Printf("  IP %d: %s", i, ip)
+		}
 		err := sensorSim.Srv.GetServer().ListenAndServe()
 		if err != ua.BadServerHalted {
 			log.Println(errors.Wrap(err, "Error starting server"))

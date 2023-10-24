@@ -32,5 +32,11 @@
             "Mean" : 15.0,
             "StandardDeviation" : 5.0
         }
-    ]
+    ],
+    "HOST": "localhost",
+    "CERTIFICATE":
+    {
+      "HOSTS" : ["test.umh.app"],
+      "IPS" : ["192.168.1.1"]
+    }
 }
