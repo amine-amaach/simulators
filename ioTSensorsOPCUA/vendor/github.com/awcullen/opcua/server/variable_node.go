@@ -9,6 +9,7 @@ import (
 
 type VariableNode struct {
 	sync.RWMutex
+	server                  *Server
 	nodeId                  ua.NodeID
 	nodeClass               ua.NodeClass
 	browseName              ua.QualifiedName
@@ -25,14 +26,15 @@ type VariableNode struct {
 	minimumSamplingInterval float64
 	historizing             bool
 	historian               HistoryReadWriter
-	readValueHandler        func(context.Context, ua.ReadValueID) ua.DataValue
-	writeValueHandler       func(context.Context, ua.WriteValue) (ua.DataValue, ua.StatusCode)
+	readValueHandler        func(*Session, ua.ReadValueID) ua.DataValue
+	writeValueHandler       func(*Session, ua.WriteValue) (ua.DataValue, ua.StatusCode)
 }
 
 var _ Node = (*VariableNode)(nil)
 
-func NewVariableNode(nodeID ua.NodeID, browseName ua.QualifiedName, displayName ua.LocalizedText, description ua.LocalizedText, rolePermissions []ua.RolePermissionType, references []ua.Reference, value ua.DataValue, dataType ua.NodeID, valueRank int32, arrayDimensions []uint32, accessLevel byte, minimumSamplingInterval float64, historizing bool, historian HistoryReadWriter) *VariableNode {
+func NewVariableNode(server *Server, nodeID ua.NodeID, browseName ua.QualifiedName, displayName ua.LocalizedText, description ua.LocalizedText, rolePermissions []ua.RolePermissionType, references []ua.Reference, value ua.DataValue, dataType ua.NodeID, valueRank int32, arrayDimensions []uint32, accessLevel byte, minimumSamplingInterval float64, historizing bool, historian HistoryReadWriter) *VariableNode {
 	return &VariableNode{
+		server:                  server,
 		nodeId:                  nodeID,
 		nodeClass:               ua.NodeClassVariable,
 		browseName:              browseName,
@@ -83,16 +85,15 @@ func (n *VariableNode) RolePermissions() []ua.RolePermissionType {
 }
 
 // UserRolePermissions returns the RolePermissions attribute of this node for the current user.
-func (n *VariableNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionType {
+func (n *VariableNode) UserRolePermissions(userIdentity any) []ua.RolePermissionType {
 	filteredPermissions := []ua.RolePermissionType{}
-	session, ok := ctx.Value(SessionKey).(*Session)
-	if !ok {
+	roles, err := n.server.GetRoles(userIdentity, "", "")
+	if err != nil {
 		return filteredPermissions
 	}
-	roles := session.UserRoles()
 	rolePermissions := n.RolePermissions()
 	if rolePermissions == nil {
-		rolePermissions = session.Server().RolePermissions()
+		rolePermissions = n.server.RolePermissions()
 	}
 	for _, role := range roles {
 		for _, rp := range rolePermissions {
@@ -107,34 +108,32 @@ func (n *VariableNode) UserRolePermissions(ctx context.Context) []ua.RolePermiss
 // References returns the References of this node.
 func (n *VariableNode) References() []ua.Reference {
 	n.RLock()
-	res := n.references
-	n.RUnlock()
-	return res
+	defer n.RUnlock()
+	return n.references
 }
 
 // SetReferences sets the References of this node.
 func (n *VariableNode) SetReferences(value []ua.Reference) {
 	n.Lock()
+	defer n.Unlock()
 	n.references = value
-	n.Unlock()
 }
 
 // Value returns the value of the Variable.
 func (n *VariableNode) Value() ua.DataValue {
 	n.RLock()
-	res := n.value
-	n.RUnlock()
-	return res
+	defer n.RUnlock()
+	return n.value
 }
 
 // SetValue sets the value of the Variable.
 func (n *VariableNode) SetValue(value ua.DataValue) {
 	n.Lock()
+	defer n.Unlock()
 	n.value = value
 	if n.historizing {
 		n.historian.WriteValue(context.Background(), n.nodeId, value)
 	}
-	n.Unlock()
 }
 
 // DataType returns the DataType attribute of this node.
@@ -158,16 +157,15 @@ func (n *VariableNode) AccessLevel() byte {
 }
 
 // UserAccessLevel returns the AccessLevel attribute of this node for this user.
-func (n *VariableNode) UserAccessLevel(ctx context.Context) byte {
+func (n *VariableNode) UserAccessLevel(userIdentity any) byte {
 	accessLevel := n.accessLevel
-	session, ok := ctx.Value(SessionKey).(*Session)
-	if !ok {
+	roles, err := n.server.GetRoles(userIdentity, "", "")
+	if err != nil {
 		return 0
 	}
-	roles := session.UserRoles()
 	rolePermissions := n.RolePermissions()
 	if rolePermissions == nil {
-		rolePermissions = session.Server().RolePermissions()
+		rolePermissions = n.server.RolePermissions()
 	}
 	var currentRead, currentWrite, historyRead bool
 	for _, role := range roles {
@@ -205,30 +203,29 @@ func (n *VariableNode) MinimumSamplingInterval() float64 {
 // Historizing returns the Historizing attribute of this node.
 func (n *VariableNode) Historizing() bool {
 	n.RLock()
-	ret := n.historizing
-	n.RUnlock()
-	return ret
+	defer n.RUnlock()
+	return n.historizing
 }
 
 // SetHistorizing sets the Historizing attribute of this node.
 func (n *VariableNode) SetHistorizing(historizing bool) {
 	n.Lock()
+	defer n.Unlock()
 	n.historizing = historizing
-	n.Unlock()
 }
 
 // SetReadValueHandler sets the ReadValueHandler of this node.
-func (n *VariableNode) SetReadValueHandler(value func(context.Context, ua.ReadValueID) ua.DataValue) {
+func (n *VariableNode) SetReadValueHandler(value func(*Session, ua.ReadValueID) ua.DataValue) {
 	n.Lock()
+	defer n.Unlock()
 	n.readValueHandler = value
-	n.Unlock()
 }
 
 // SetWriteValueHandler sets the WriteValueHandler of this node.
-func (n *VariableNode) SetWriteValueHandler(value func(context.Context, ua.WriteValue) (ua.DataValue, ua.StatusCode)) {
+func (n *VariableNode) SetWriteValueHandler(value func(*Session, ua.WriteValue) (ua.DataValue, ua.StatusCode)) {
 	n.Lock()
+	defer n.Unlock()
 	n.writeValueHandler = value
-	n.Unlock()
 }
 
 // IsAttributeIDValid returns true if attributeId is supported for the node.

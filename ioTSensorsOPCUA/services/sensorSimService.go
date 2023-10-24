@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"github.com/amine-amaach/simulators/ioTSensorsOPCUA/utils"
 
 	"github.com/awcullen/opcua/server"
@@ -26,6 +27,7 @@ func NewSensorSimService(host string, port int, userIds []ua.UserNameIdentity, c
 
 func (sensorSim SensorSimService) CreateNewVariableNode(nsi uint16, nodeName string) *server.VariableNode {
 	return server.NewVariableNode(
+		sensorSim.Srv.server,
 		ua.NodeIDString{NamespaceIndex: nsi, ID: nodeName},
 		ua.QualifiedName{NamespaceIndex: nsi, Name: nodeName},
 		ua.LocalizedText{Text: nodeName},

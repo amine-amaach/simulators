@@ -39,6 +39,7 @@ func NewUaSrvService(host string, port int, userIds []ua.UserNameIdentity, certi
 	nsu := "http://github.com/amine-amaach/simulators/ioTSensorsOPCUA"
 	// add 'SimulatorsProject' object.
 	ioTSensors := server.NewObjectNode(
+		srv,
 		ua.NodeIDString{NamespaceIndex: srv.NamespaceManager().Add(nsu), ID: "IoTSensors"},
 		ua.QualifiedName{NamespaceIndex: srv.NamespaceManager().Add(nsu), Name: "IoTSensors"},
 		ua.LocalizedText{Text: "IoT Sensors"},
