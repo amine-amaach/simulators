@@ -122,17 +122,17 @@ func encryptPasswords(userIds []ua.UserNameIdentity) {
 
 func ensurePKI(certificateAdditions *utils.Certificate, host string) error {
 
-	// check if ../uaServerCerts/pki already exists
-	if _, err := os.Stat("./uaServerCerts/pki"); !os.IsNotExist(err) {
-		return nil
+	// Remove the folder if it exists
+	if err := os.RemoveAll("./uaServerCerts/pki"); err != nil {
+		return err
 	}
 
-	// make a pki directory, if not exist
+	// Create a new pki directory
 	if err := os.MkdirAll("./uaServerCerts/pki", os.ModeDir|0755); err != nil {
 		return err
 	}
 
-	// create a server certificate
+	// Create a new server certificate
 	if err := createNewCertificate("IoTSensorsUaServer", certificateAdditions, host); err != nil {
 		return err
 	}
