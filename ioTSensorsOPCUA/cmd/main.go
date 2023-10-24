@@ -75,6 +75,10 @@ ______________________________________________________________________________O/
 		for i, ip := range configs.Certificate.AdditionalIPs {
 			log.Printf("  IP %d: %s", i, ip)
 		}
+		log.Printf("Username/Password")
+		for _, userID := range configs.UserIds {
+			log.Printf("  User:Password %s:%s", userID.Username, userID.Password)
+		}
 		err := sensorSim.Srv.GetServer().ListenAndServe()
 		if err != ua.BadServerHalted {
 			log.Println(errors.Wrap(err, "Error starting server"))
