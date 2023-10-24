@@ -3,7 +3,6 @@
 package server
 
 import (
-	"context"
 	"sync"
 
 	"github.com/awcullen/opcua/ua"
@@ -12,6 +11,7 @@ import (
 // DataTypeNode is a Node class that describes the syntax of a variable's Value.
 type DataTypeNode struct {
 	sync.RWMutex
+	server             *Server
 	nodeID             ua.NodeID
 	nodeClass          ua.NodeClass
 	browseName         ua.QualifiedName
@@ -21,14 +21,15 @@ type DataTypeNode struct {
 	accessRestrictions uint16
 	references         []ua.Reference
 	isAbstract         bool
-	dataTypeDefinition interface{}
+	dataTypeDefinition any
 }
 
 var _ Node = (*DataTypeNode)(nil)
 
 // NewDataTypeNode creates a new DataTypeNode.
-func NewDataTypeNode(nodeID ua.NodeID, browseName ua.QualifiedName, displayName ua.LocalizedText, description ua.LocalizedText, rolePermissions []ua.RolePermissionType, references []ua.Reference, isAbstract bool) *DataTypeNode {
+func NewDataTypeNode(server *Server, nodeID ua.NodeID, browseName ua.QualifiedName, displayName ua.LocalizedText, description ua.LocalizedText, rolePermissions []ua.RolePermissionType, references []ua.Reference, isAbstract bool, structureOrEnumDefinition any) *DataTypeNode {
 	return &DataTypeNode{
+		server:             server,
 		nodeID:             nodeID,
 		nodeClass:          ua.NodeClassDataType,
 		browseName:         browseName,
@@ -38,11 +39,11 @@ func NewDataTypeNode(nodeID ua.NodeID, browseName ua.QualifiedName, displayName 
 		accessRestrictions: 0,
 		references:         references,
 		isAbstract:         isAbstract,
-		dataTypeDefinition: nil,
+		dataTypeDefinition: structureOrEnumDefinition,
 	}
 }
 
-//NodeID returns the NodeID attribute of this node.
+// NodeID returns the NodeID attribute of this node.
 func (n *DataTypeNode) NodeID() ua.NodeID {
 	return n.nodeID
 }
@@ -73,16 +74,15 @@ func (n *DataTypeNode) RolePermissions() []ua.RolePermissionType {
 }
 
 // UserRolePermissions returns the RolePermissions attribute of this node for the current user.
-func (n *DataTypeNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionType {
+func (n *DataTypeNode) UserRolePermissions(userIdentity any) []ua.RolePermissionType {
 	filteredPermissions := []ua.RolePermissionType{}
-	session, ok := ctx.Value(SessionKey).(*Session)
-	if !ok {
+	roles, err := n.server.GetRoles(userIdentity, "", "")
+	if err != nil {
 		return filteredPermissions
 	}
-	roles := session.UserRoles()
 	rolePermissions := n.RolePermissions()
 	if rolePermissions == nil {
-		rolePermissions = session.Server().RolePermissions()
+		rolePermissions = n.server.RolePermissions()
 	}
 	for _, role := range roles {
 		for _, rp := range rolePermissions {
@@ -97,16 +97,15 @@ func (n *DataTypeNode) UserRolePermissions(ctx context.Context) []ua.RolePermiss
 // References returns the References of this node.
 func (n *DataTypeNode) References() []ua.Reference {
 	n.RLock()
-	res := n.references
-	n.RUnlock()
-	return res
+	defer n.RUnlock()
+	return n.references
 }
 
 // SetReferences sets the References of the Variable.
 func (n *DataTypeNode) SetReferences(value []ua.Reference) {
 	n.Lock()
+	defer n.Unlock()
 	n.references = value
-	n.Unlock()
 }
 
 // IsAbstract returns the IsAbstract attribute of this node.
@@ -115,7 +114,7 @@ func (n *DataTypeNode) IsAbstract() bool {
 }
 
 // DataTypeDefinition returns the DataTypeDefinition attribute of this node.
-func (n *DataTypeNode) DataTypeDefinition() interface{} {
+func (n *DataTypeNode) DataTypeDefinition() any {
 	return n.dataTypeDefinition
 }
 

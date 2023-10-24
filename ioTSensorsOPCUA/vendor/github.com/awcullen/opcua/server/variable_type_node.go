@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"sync"
 
 	"github.com/awcullen/opcua/ua"
@@ -9,6 +8,7 @@ import (
 
 type VariableTypeNode struct {
 	sync.RWMutex
+	server             *Server
 	nodeId             ua.NodeID
 	nodeClass          ua.NodeClass
 	browseName         ua.QualifiedName
@@ -26,8 +26,9 @@ type VariableTypeNode struct {
 
 var _ Node = (*VariableTypeNode)(nil)
 
-func NewVariableTypeNode(nodeId ua.NodeID, browseName ua.QualifiedName, displayName ua.LocalizedText, description ua.LocalizedText, rolePermissions []ua.RolePermissionType, references []ua.Reference, value ua.DataValue, dataType ua.NodeID, valueRank int32, arrayDimensions []uint32, isAbstract bool) *VariableTypeNode {
+func NewVariableTypeNode(server *Server, nodeId ua.NodeID, browseName ua.QualifiedName, displayName ua.LocalizedText, description ua.LocalizedText, rolePermissions []ua.RolePermissionType, references []ua.Reference, value ua.DataValue, dataType ua.NodeID, valueRank int32, arrayDimensions []uint32, isAbstract bool) *VariableTypeNode {
 	return &VariableTypeNode{
+		server:             server,
 		nodeId:             nodeId,
 		nodeClass:          ua.NodeClassVariableType,
 		browseName:         browseName,
@@ -75,16 +76,15 @@ func (n *VariableTypeNode) RolePermissions() []ua.RolePermissionType {
 }
 
 // UserRolePermissions returns the RolePermissions attribute of this node for the current user.
-func (n *VariableTypeNode) UserRolePermissions(ctx context.Context) []ua.RolePermissionType {
+func (n *VariableTypeNode) UserRolePermissions(userIdentity any) []ua.RolePermissionType {
 	filteredPermissions := []ua.RolePermissionType{}
-	session, ok := ctx.Value(SessionKey).(*Session)
-	if !ok {
+	roles, err := n.server.GetRoles(userIdentity, "", "")
+	if err != nil {
 		return filteredPermissions
 	}
-	roles := session.UserRoles()
 	rolePermissions := n.RolePermissions()
 	if rolePermissions == nil {
-		rolePermissions = session.Server().RolePermissions()
+		rolePermissions = n.server.RolePermissions()
 	}
 	for _, role := range roles {
 		for _, rp := range rolePermissions {
@@ -99,16 +99,15 @@ func (n *VariableTypeNode) UserRolePermissions(ctx context.Context) []ua.RolePer
 // References returns the References of this node.
 func (n *VariableTypeNode) References() []ua.Reference {
 	n.RLock()
-	res := n.references
-	n.RUnlock()
-	return res
+	defer n.RUnlock()
+	return n.references
 }
 
 // SetReferences sets the References of the Variable.
 func (n *VariableTypeNode) SetReferences(value []ua.Reference) {
 	n.Lock()
+	defer n.Unlock()
 	n.references = value
-	n.Unlock()
 }
 
 // Value returns the value of the Variable.

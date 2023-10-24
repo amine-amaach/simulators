@@ -3,12 +3,11 @@
 package server
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -298,7 +297,7 @@ func (m *NamespaceManager) SetMultiStateValueDiscreteTypeBehavior(node *Variable
 	if !ok {
 		return ua.BadNodeIDUnknown
 	}
-	node.SetWriteValueHandler(func(ctx context.Context, req ua.WriteValue) (ua.DataValue, ua.StatusCode) {
+	node.SetWriteValueHandler(func(session *Session, req ua.WriteValue) (ua.DataValue, ua.StatusCode) {
 		var value int64
 		switch v := req.Value.Value.(type) {
 		case uint8:
@@ -384,7 +383,7 @@ func (m *NamespaceManager) addNodes(nodes []Node) error {
 
 // AddNodes adds the nodes to the namespace.
 // This method adds the inverse refs as well.
-func (m *NamespaceManager) AddNodes(nodes []Node) error {
+func (m *NamespaceManager) AddNodes(nodes ...Node) error {
 	m.Lock()
 	defer m.Unlock()
 	return m.addNodes(nodes)
@@ -402,6 +401,7 @@ func (m *NamespaceManager) AddNode(node Node) error {
 // This method removes the inverse refs as well.
 func (m *NamespaceManager) DeleteNodes(nodes []Node, deleteChildren bool) error {
 	m.Lock()
+	defer m.Unlock()
 	children := []Node{}
 	for _, node := range nodes {
 		children = append(children, m.GetChildren(node, m.namespaces, hasChildandSubtypes)...)
@@ -412,7 +412,6 @@ func (m *NamespaceManager) DeleteNodes(nodes []Node, deleteChildren bool) error 
 	for _, node := range nodes {
 		m.deleteNodeandInverseReferences(node, m.namespaces)
 	}
-	m.Unlock()
 	return nil
 }
 
@@ -452,10 +451,10 @@ func (m *NamespaceManager) DeleteNode(node Node, deleteChildren bool) error {
 // GetSubTypes traverses the tree to get all target nodes with HasSubtype reference type.
 func (m *NamespaceManager) GetSubTypes(node Node) []Node {
 	children := []Node{}
-	queue := deque.Deque{}
+	queue := deque.Deque[Node]{}
 	queue.PushBack(node)
 	for queue.Len() > 0 {
-		node := queue.PopFront().(Node)
+		node := queue.PopFront()
 		for _, r := range node.References() {
 			if !r.IsInverse && r.ReferenceTypeID == ua.ReferenceTypeIDHasSubtype {
 				queue.PushBack(node)
@@ -473,10 +472,10 @@ func (m *NamespaceManager) GetChildren(node Node, uris []string, withRefTypes []
 		Node    Node
 		Visited bool
 	}
-	queue := deque.Deque{}
+	queue := deque.Deque[queuedItem]{}
 	queue.PushBack(queuedItem{node, false})
 	for queue.Len() > 0 {
-		item := queue.PopFront().(queuedItem)
+		item := queue.PopFront()
 		if item.Visited {
 			continue
 		}
@@ -537,7 +536,7 @@ func Contains(nodes []ua.NodeID, node ua.NodeID) bool {
 
 // LoadNodeSetFromFile loads the UANodeSet XML from a file with the given path into the namespace.
 func (m *NamespaceManager) LoadNodeSetFromFile(path string) error {
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		log.Printf("Error reading nodeset. %s\n", err)
 		return err
@@ -547,6 +546,7 @@ func (m *NamespaceManager) LoadNodeSetFromFile(path string) error {
 
 // LoadNodeSetFromBuffer loads the UANodeSet XML from a buffer into the namespace.
 func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
+	srv := m.server
 	set := &ua.UANodeSet{}
 	err := xml.Unmarshal(buf, &set)
 	if err != nil {
@@ -578,6 +578,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 		switch n.XMLName.Local {
 		case "UAObjectType":
 			nodes[i] = NewObjectTypeNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -588,6 +589,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		case "UAVariableType":
 			nodes[i] = NewVariableTypeNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -602,6 +604,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		case "UADataType":
 			nodes[i] = NewDataTypeNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -609,9 +612,11 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 				nil,
 				toRefs(n.References, aliases, nsMap),
 				n.IsAbstract,
+				nil,
 			)
 		case "UAReferenceType":
 			nodes[i] = NewReferenceTypeNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -624,6 +629,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		case "UAObject":
 			nodes[i] = NewObjectNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -634,6 +640,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		case "UAVariable":
 			nodes[i] = NewVariableNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -651,6 +658,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		case "UAMethod":
 			nodes[i] = NewMethodNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -661,6 +669,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		case "UAView":
 			nodes[i] = NewViewNode(
+				srv,
 				toNodeID(n.NodeID, aliases, nsMap),
 				toBrowseName(n.BrowseName, nsMap),
 				toLocalizedText(n.DisplayName),
@@ -672,7 +681,7 @@ func (m *NamespaceManager) LoadNodeSetFromBuffer(buf []byte) error {
 			)
 		}
 	}
-	err = m.AddNodes(nodes)
+	err = m.AddNodes(nodes...)
 	if err != nil {
 		log.Printf("Error adding nodes. %s\n", err)
 		return err

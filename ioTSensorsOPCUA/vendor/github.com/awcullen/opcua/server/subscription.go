@@ -2,7 +2,6 @@ package server
 
 import (
 	"container/list"
-	"context"
 	"log"
 	"math"
 	"sync"
@@ -30,22 +29,22 @@ type Subscription struct {
 	sync.RWMutex
 	id                           uint32
 	publishingInterval           float64
-	lifetimeCount                uint32
+	maxLifetimeCount             uint32
 	maxKeepAliveCount            uint32
 	maxNotificationsPerPublish   uint32
 	publishingEnabled            bool
 	priority                     byte
-	seqNum                       uint32
+	nextSequenceNumber           uint32
 	cancelPublishing             chan struct{}
-	items                        map[uint32]*MonitoredItem
-	keepAliveCounter             uint32
-	lifetimeCounter              uint32
+	items                        map[uint32]MonitoredItem
+	keepAliveCount               uint32
+	lifetimeCount                uint32
 	moreNotifications            bool
+	isLate                       bool
+	resend                       bool
 	session                      *Session
 	manager                      *SubscriptionManager
 	retransmissionQueue          *list.List
-	isLate                       bool
-	resend                       bool
 	diagnosticsNodeId            ua.NodeID
 	sessionId                    ua.NodeID
 	modifyCount                  uint32
@@ -71,9 +70,8 @@ func NewSubscription(manager *SubscriptionManager, session *Session, publishingI
 		id:                  atomic.AddUint32(&subscriptionID, 1),
 		publishingEnabled:   publishingEnabled,
 		priority:            priority,
-		seqNum:              1,
-		keepAliveCounter:    math.MaxUint32,
-		items:               make(map[uint32]*MonitoredItem),
+		nextSequenceNumber:  1,
+		items:               make(map[uint32]MonitoredItem),
 		retransmissionQueue: list.New(),
 		diagnosticsNodeId:   ua.NewNodeIDGUID(1, uuid.New()),
 		sessionId:           session.sessionId,
@@ -88,15 +86,14 @@ func NewSubscription(manager *SubscriptionManager, session *Session, publishingI
 
 func (s *Subscription) IsExpired() bool {
 	s.RLock()
-	ret := s.lifetimeCounter >= s.lifetimeCount
-	s.RUnlock()
-	return ret
+	defer s.RUnlock()
+	return s.lifetimeCount >= s.maxLifetimeCount
 }
 
 func (s *Subscription) Delete() {
 	s.Lock()
+	defer s.Unlock()
 	s.deleteImpl()
-	s.Unlock()
 }
 
 func (s *Subscription) deleteImpl() {
@@ -117,73 +114,73 @@ func (s *Subscription) deleteImpl() {
 	s.manager = nil
 }
 
-func (s *Subscription) Items() []*MonitoredItem {
+func (s *Subscription) Items() []MonitoredItem {
 	s.RLock()
-	ret := []*MonitoredItem{}
+	defer s.RUnlock()
+	ret := []MonitoredItem{}
 	for _, v := range s.items {
 		ret = append(ret, v)
 	}
-	s.RUnlock()
 	return ret
 }
 
-func (s *Subscription) FindItem(id uint32) (*MonitoredItem, bool) {
+func (s *Subscription) FindItem(id uint32) (MonitoredItem, bool) {
 	s.RLock()
+	defer s.RUnlock()
 	item, ok := s.items[id]
-	s.RUnlock()
 	return item, ok
 }
 
-func (s *Subscription) AppendItem(item *MonitoredItem) bool {
+func (s *Subscription) AppendItem(item MonitoredItem) bool {
 	s.Lock()
+	defer s.Unlock()
 	ret := false
-	if _, ok := s.items[item.id]; !ok {
-		s.items[item.id] = item
+	if _, ok := s.items[item.ID()]; !ok {
+		s.items[item.ID()] = item
 		s.monitoredItemCount++
-		if item.monitoringMode == ua.MonitoringModeDisabled {
+		if item.MonitoringMode() == ua.MonitoringModeDisabled {
 			s.disabledMonitoredItemCount++
 		}
 		ret = true
 	}
-	s.Unlock()
 	return ret
 }
 
-func (s *Subscription) DeleteItem(ctx context.Context, id uint32) bool {
+func (s *Subscription) DeleteItem(id uint32) bool {
 	s.Lock()
+	defer s.Unlock()
 	ret := false
 	if item, ok := s.items[id]; ok {
 		delete(s.items, id)
 		item.Delete()
 		s.monitoredItemCount--
-		if item.monitoringMode == ua.MonitoringModeDisabled {
+		if item.MonitoringMode() == ua.MonitoringModeDisabled {
 			s.disabledMonitoredItemCount--
 		}
 		ret = true
 	}
-	s.Unlock()
 	return ret
 }
 
 func (s *Subscription) SetPublishingMode(publishingEnabled bool) {
 	s.Lock()
+	defer s.Unlock()
 	s.publishingEnabled = publishingEnabled
-	s.lifetimeCounter = 0
-	s.Unlock()
+	s.lifetimeCount = 0
 }
 
 func (s *Subscription) Modify(publishingInterval float64, lifetimeCount uint32, maxKeepAliveCount uint32, maxNotificationsPerPublish uint32, priority byte) {
 	s.Lock()
+	defer s.Unlock()
 	s.stopPublishing()
 	s.setPublishingInterval(publishingInterval)
 	s.setMaxKeepAliveCount(maxKeepAliveCount)
 	s.setLifetimeCount(lifetimeCount)
 	s.setMaxNotificationsPerPublish(maxNotificationsPerPublish)
 	s.priority = priority
-	s.lifetimeCounter = 0
+	s.lifetimeCount = 0
 	s.modifyCount++
 	s.startPublishing()
-	s.Unlock()
 }
 
 func (s *Subscription) setPublishingInterval(publishingInterval float64) {
@@ -257,7 +254,7 @@ func (s *Subscription) setLifetimeCount(lifetimeCount uint32) {
 			}
 		}
 	}
-	s.lifetimeCount = lifetimeCount
+	s.maxLifetimeCount = lifetimeCount
 }
 
 func (s *Subscription) setMaxNotificationsPerPublish(maxNotificationsPerPublish uint32) {
@@ -286,7 +283,7 @@ func (s *Subscription) startPublishing() {
 	// log.Printf("startPublishing %d \n", s.id)
 	s.cancelPublishing = make(chan struct{})
 
-	go func(done chan struct{}, interval time.Duration, f func(time.Time)) {
+	go func(done chan struct{}, interval time.Duration, f func(time.Time) error) {
 		ticker := time.NewTicker(interval)
 		for {
 			select {
@@ -305,11 +302,11 @@ func (s *Subscription) stopPublishing() {
 	close(s.cancelPublishing)
 }
 
-func (s *Subscription) publish(_ time.Time) {
-	// log.Printf("onPublish %d \n", s.id)
+func (s *Subscription) publish(tn time.Time) error {
+	// log.Printf("onPublish id: %d, keepAlive: %d, lifetime: %d\n", s.id, s.keepAliveCount, s.lifetimeCount)
 	s.Lock()
+	defer s.Unlock()
 	notificationsAvailable := false
-	tn := time.Now()
 	for _, item := range s.items {
 		if item.notificationsAvailable(tn, false, s.resend) {
 			notificationsAvailable = true
@@ -321,37 +318,41 @@ func (s *Subscription) publish(_ time.Time) {
 		sess := s.session
 		if sess == nil {
 			log.Printf("Subscription '%d' session in nil.\n", s.id)
-			s.Unlock()
-			return
+			return nil
 		}
-		if ch, requestid, req, results, ok := sess.removePublishRequest(); ok {
+		ch, requestid, req, results, ok, err := sess.removePublishRequest()
+		if err != nil {
+			return err
+		}
+		if ok {
 			more := false
 			maxN := int(s.maxNotificationsPerPublish)
 			mins := make([]ua.MonitoredItemNotification, 0, 4)
 			efls := make([]ua.EventFieldList, 0, 4)
 			for _, item := range s.items {
-				if item.monitoringMode != ua.MonitoringModeReporting && !item.triggered {
+				if item.MonitoringMode() != ua.MonitoringModeReporting && !item.Triggered() {
 					continue
 				}
 				// if item.triggered {
 				// log.Printf("TriggeredItem %d published.", item.id)
 				// }
-				if item.itemToMonitor.AttributeID == ua.AttributeIDEventNotifier {
-					encs, more1 := item.notifications(maxN)
+				switch mi := item.(type) {
+				case *EventMonitoredItem:
+					encs, more1 := mi.notifications(maxN)
 					for _, enc := range encs {
 						if efs, ok := enc.([]ua.Variant); ok {
-							efls = append(efls, ua.EventFieldList{ClientHandle: item.clientHandle, EventFields: efs})
+							efls = append(efls, ua.EventFieldList{ClientHandle: item.ClientHandle(), EventFields: efs})
 							s.eventNotificationsCount++
 							s.notificationsCount++
 						}
 					}
 					more = more || more1
 					maxN = maxN - len(encs)
-				} else {
-					encs, more1 := item.notifications(maxN)
+				case *DataChangeMonitoredItem:
+					encs, more1 := mi.notifications(maxN)
 					for _, enc := range encs {
 						if dv, ok := enc.(ua.DataValue); ok {
-							mins = append(mins, ua.MonitoredItemNotification{ClientHandle: item.clientHandle, Value: dv})
+							mins = append(mins, ua.MonitoredItemNotification{ClientHandle: item.ClientHandle(), Value: dv})
 							s.dataChangeNotificationsCount++
 							s.notificationsCount++
 						}
@@ -368,7 +369,7 @@ func (s *Subscription) publish(_ time.Time) {
 				nd = append(nd, ua.EventNotificationList{Events: efls})
 			}
 			nm := ua.NotificationMessage{
-				SequenceNumber:   s.seqNum,
+				SequenceNumber:   s.nextSequenceNumber,
 				PublishTime:      tn,
 				NotificationData: nd,
 			}
@@ -384,7 +385,7 @@ func (s *Subscription) publish(_ time.Time) {
 					avail = append(avail, nm.SequenceNumber)
 				}
 			}
-			ch.Write(
+			err := ch.Write(
 				&ua.PublishResponse{
 					ResponseHeader: ua.ResponseHeader{
 						Timestamp:     time.Now(),
@@ -399,118 +400,110 @@ func (s *Subscription) publish(_ time.Time) {
 				},
 				requestid,
 			)
+			if err != nil {
+				return err
+			}
 			s.unacknowledgedMessageCount = uint32(len(avail))
 			s.publishRequestCount++
-			if s.seqNum != math.MaxUint32 {
-				s.seqNum++
-			} else {
-				s.seqNum = 1
-			}
-			s.keepAliveCounter = 0
-			s.lifetimeCounter = 0
+			s.nextSequenceNumber++
+			s.keepAliveCount = 0
+			s.lifetimeCount = 0
 			s.isLate = false
 			s.moreNotifications = more
-			s.Unlock()
-			return
+			return nil
 		}
 		// only get here if no publishRequests are queued.
 		s.isLate = true
-		s.lifetimeCounter++
-		if s.lifetimeCounter == s.lifetimeCount {
+		s.lifetimeCount++
+		if s.lifetimeCount >= s.maxLifetimeCount {
 			// log.Printf("Subscription '%d' expired.\n", s.id)
 			nm := ua.NotificationMessage{
-				SequenceNumber:   s.seqNum,
+				SequenceNumber:   s.nextSequenceNumber,
 				PublishTime:      time.Now(),
 				NotificationData: []ua.ExtensionObject{ua.StatusChangeNotification{Status: ua.BadTimeout}},
 			}
 			s.session.stateChanges <- &stateChangeOp{subscriptionId: s.id, message: nm}
-			if s.seqNum != math.MaxUint32 {
-				s.seqNum++
-			} else {
-				s.seqNum = 1
-			}
+			s.nextSequenceNumber++
 			s.manager.Delete(s)
 			s.deleteImpl()
 		}
-		s.Unlock()
-		return
-
-	case s.keepAliveCounter >= s.maxKeepAliveCount:
-		sess := s.session
-		if sess == nil {
-			log.Printf("Subscription '%d' session in nil.\n", s.id)
-			s.Unlock()
-			return
-		}
-		if ch, requestid, req, results, ok := sess.removePublishRequest(); ok {
-			avail := make([]uint32, 0, 4)
-			q := s.retransmissionQueue
-			for e := q.Front(); e != nil; e = e.Next() {
-				if nm, ok := e.Value.(ua.NotificationMessage); ok {
-					avail = append(avail, nm.SequenceNumber)
-				}
-			}
-			ch.Write(
-				&ua.PublishResponse{
-					ResponseHeader: ua.ResponseHeader{
-						Timestamp:     time.Now(),
-						RequestHandle: req.RequestHeader.RequestHandle,
-					},
-					SubscriptionID:           s.id,
-					AvailableSequenceNumbers: avail,
-					MoreNotifications:        false,
-					NotificationMessage: ua.NotificationMessage{
-						SequenceNumber:   s.seqNum,
-						PublishTime:      time.Now(),
-						NotificationData: nil,
-					},
-					Results:         results,
-					DiagnosticInfos: nil,
-				},
-				requestid,
-			)
-			s.unacknowledgedMessageCount = uint32(len(avail))
-			s.publishRequestCount++
-			s.keepAliveCounter = 0
-			s.lifetimeCounter = 0
-			s.isLate = false
-			s.Unlock()
-			return
-		}
-		// only get here if no publishRequests are queued.
-		s.isLate = true
-		s.lifetimeCounter++
-		if s.lifetimeCounter == s.lifetimeCount {
-			// log.Printf("Subscription '%d' expired.\n", s.id)
-			nm := ua.NotificationMessage{
-				SequenceNumber:   s.seqNum,
-				PublishTime:      time.Now(),
-				NotificationData: []ua.ExtensionObject{ua.StatusChangeNotification{Status: ua.BadTimeout}},
-			}
-			s.session.stateChanges <- &stateChangeOp{subscriptionId: s.id, message: nm}
-			if s.seqNum != math.MaxUint32 {
-				s.seqNum++
-			} else {
-				s.seqNum = 1
-			}
-			s.manager.Delete(s)
-			s.deleteImpl()
-		}
-		s.Unlock()
-		return
+		return nil
 
 	default:
-		s.keepAliveCounter++
-		s.Unlock()
-		return
+		s.keepAliveCount++
+		if s.keepAliveCount >= s.maxKeepAliveCount || s.publishRequestCount == 0 {
+			sess := s.session
+			if sess == nil {
+				log.Printf("Subscription '%d' session in nil.\n", s.id)
+				return nil
+			}
+			ch, requestid, req, results, ok, err := sess.removePublishRequest()
+			if err != nil {
+				return err
+			}
+			if ok {
+				avail := make([]uint32, 0, 4)
+				q := s.retransmissionQueue
+				for e := q.Front(); e != nil; e = e.Next() {
+					if nm, ok := e.Value.(ua.NotificationMessage); ok {
+						avail = append(avail, nm.SequenceNumber)
+					}
+				}
+				err := ch.Write(
+					&ua.PublishResponse{
+						ResponseHeader: ua.ResponseHeader{
+							Timestamp:     time.Now(),
+							RequestHandle: req.RequestHeader.RequestHandle,
+						},
+						SubscriptionID:           s.id,
+						AvailableSequenceNumbers: avail,
+						MoreNotifications:        false,
+						NotificationMessage: ua.NotificationMessage{
+							SequenceNumber:   s.nextSequenceNumber,
+							PublishTime:      time.Now(),
+							NotificationData: nil,
+						},
+						Results:         results,
+						DiagnosticInfos: nil,
+					},
+					requestid,
+				)
+				if err != nil {
+					return err
+				}
+				s.unacknowledgedMessageCount = uint32(len(avail))
+				s.publishRequestCount++
+				s.keepAliveCount = 0
+				s.lifetimeCount = 0
+				s.isLate = false
+				return nil
+			}
+			// only get here if no publishRequests are queued.
+			s.isLate = true
+			s.lifetimeCount++
+			if s.lifetimeCount == s.maxLifetimeCount {
+				// log.Printf("Subscription '%d' expired.\n", s.id)
+				nm := ua.NotificationMessage{
+					SequenceNumber:   s.nextSequenceNumber,
+					PublishTime:      time.Now(),
+					NotificationData: []ua.ExtensionObject{ua.StatusChangeNotification{Status: ua.BadTimeout}},
+				}
+				s.session.stateChanges <- &stateChangeOp{subscriptionId: s.id, message: nm}
+				s.nextSequenceNumber++
+				s.manager.Delete(s)
+				s.deleteImpl()
+			}
+			return nil
+		}
+		return nil
 	}
 }
 
-func (s *Subscription) handleLatePublishRequest(ch *serverSecureChannel, requestid uint32, req *ua.PublishRequest, results []ua.StatusCode) bool {
+func (s *Subscription) handleLatePublishRequest(ch *serverSecureChannel, requestid uint32, req *ua.PublishRequest, results []ua.StatusCode) (bool, error) {
 	s.Lock()
+	defer s.Unlock()
 	if !s.isLate {
-		s.Unlock()
-		return false
+		return false, nil
 	}
 	tn := time.Now()
 	notificationsAvailable := false
@@ -527,28 +520,29 @@ func (s *Subscription) handleLatePublishRequest(ch *serverSecureChannel, request
 		mins := make([]ua.MonitoredItemNotification, 0, 4)
 		efls := make([]ua.EventFieldList, 0, 4)
 		for _, item := range s.items {
-			if item.monitoringMode != ua.MonitoringModeReporting && !item.triggered {
+			if item.MonitoringMode() != ua.MonitoringModeReporting && !item.Triggered() {
 				continue
 			}
 			// if item.triggered {
 			// 	// log.Printf("TriggeredItem %d published late.", item.id)
 			// }
-			if item.itemToMonitor.AttributeID == ua.AttributeIDEventNotifier {
-				encs, more1 := item.notifications(maxN)
+			switch mi := item.(type) {
+			case *EventMonitoredItem:
+				encs, more1 := mi.notifications(maxN)
 				for _, enc := range encs {
 					if efs, ok := enc.([]ua.Variant); ok {
-						efls = append(efls, ua.EventFieldList{ClientHandle: item.clientHandle, EventFields: efs})
+						efls = append(efls, ua.EventFieldList{ClientHandle: item.ClientHandle(), EventFields: efs})
 						s.eventNotificationsCount++
 						s.notificationsCount++
 					}
 				}
 				more = more || more1
 				maxN = maxN - len(encs)
-			} else {
-				encs, more1 := item.notifications(maxN)
+			case *DataChangeMonitoredItem:
+				encs, more1 := mi.notifications(maxN)
 				for _, enc := range encs {
 					if dv, ok := enc.(ua.DataValue); ok {
-						mins = append(mins, ua.MonitoredItemNotification{ClientHandle: item.clientHandle, Value: dv})
+						mins = append(mins, ua.MonitoredItemNotification{ClientHandle: item.ClientHandle(), Value: dv})
 						s.dataChangeNotificationsCount++
 						s.notificationsCount++
 					}
@@ -565,7 +559,7 @@ func (s *Subscription) handleLatePublishRequest(ch *serverSecureChannel, request
 			nd = append(nd, ua.EventNotificationList{Events: efls})
 		}
 		nm := ua.NotificationMessage{
-			SequenceNumber:   s.seqNum,
+			SequenceNumber:   s.nextSequenceNumber,
 			PublishTime:      tn,
 			NotificationData: nd,
 		}
@@ -580,7 +574,7 @@ func (s *Subscription) handleLatePublishRequest(ch *serverSecureChannel, request
 				avail = append(avail, nm.SequenceNumber)
 			}
 		}
-		ch.Write(
+		err := ch.Write(
 			&ua.PublishResponse{
 				ResponseHeader: ua.ResponseHeader{
 					Timestamp:     time.Now(),
@@ -595,66 +589,68 @@ func (s *Subscription) handleLatePublishRequest(ch *serverSecureChannel, request
 			},
 			requestid,
 		)
+		if err != nil {
+			return true, err
+		}
 		s.publishRequestCount++
 		s.latePublishRequestCount++
 		s.unacknowledgedMessageCount = uint32(len(avail))
-		if s.seqNum != math.MaxUint32 {
-			s.seqNum++
-		} else {
-			s.seqNum = 1
-		}
-		s.keepAliveCounter = 0
-		s.lifetimeCounter = 0
+		s.nextSequenceNumber++
+		s.keepAliveCount = 0
+		s.lifetimeCount = 0
 		s.moreNotifications = more
 		if !more {
 			s.isLate = false
 		}
-		s.Unlock()
-		return true
-	case s.keepAliveCounter >= s.maxKeepAliveCount:
-		avail := make([]uint32, 0, 4)
-		q := s.retransmissionQueue
-		for e := q.Front(); e != nil; e = e.Next() {
-			if nm, ok := e.Value.(ua.NotificationMessage); ok {
-				avail = append(avail, nm.SequenceNumber)
+		return true, nil
+
+	default:
+		if s.keepAliveCount >= s.maxKeepAliveCount || s.publishRequestCount == 0 {
+			avail := make([]uint32, 0, 4)
+			q := s.retransmissionQueue
+			for e := q.Front(); e != nil; e = e.Next() {
+				if nm, ok := e.Value.(ua.NotificationMessage); ok {
+					avail = append(avail, nm.SequenceNumber)
+				}
 			}
+			results := make([]ua.StatusCode, len(req.SubscriptionAcknowledgements))
+			err := ch.Write(
+				&ua.PublishResponse{
+					ResponseHeader: ua.ResponseHeader{
+						Timestamp:     time.Now(),
+						RequestHandle: req.RequestHeader.RequestHandle,
+					},
+					SubscriptionID:           s.id,
+					AvailableSequenceNumbers: avail,
+					MoreNotifications:        false,
+					NotificationMessage: ua.NotificationMessage{
+						SequenceNumber:   s.nextSequenceNumber,
+						PublishTime:      time.Now(),
+						NotificationData: nil,
+					},
+					Results:         results,
+					DiagnosticInfos: nil,
+				},
+				requestid,
+			)
+			if err != nil {
+				return true, err
+			}
+			s.publishRequestCount++
+			s.latePublishRequestCount++
+			s.unacknowledgedMessageCount = uint32(len(avail))
+			s.keepAliveCount = 0
+			s.lifetimeCount = 0
+			s.isLate = false
+			return true, nil
 		}
-		results := make([]ua.StatusCode, len(req.SubscriptionAcknowledgements))
-		ch.Write(
-			&ua.PublishResponse{
-				ResponseHeader: ua.ResponseHeader{
-					Timestamp:     time.Now(),
-					RequestHandle: req.RequestHeader.RequestHandle,
-				},
-				SubscriptionID:           s.id,
-				AvailableSequenceNumbers: avail,
-				MoreNotifications:        false,
-				NotificationMessage: ua.NotificationMessage{
-					SequenceNumber:   s.seqNum,
-					PublishTime:      time.Now(),
-					NotificationData: nil,
-				},
-				Results:         results,
-				DiagnosticInfos: nil,
-			},
-			requestid,
-		)
-		s.publishRequestCount++
-		s.latePublishRequestCount++
-		s.unacknowledgedMessageCount = uint32(len(avail))
-		s.keepAliveCounter = 0
-		s.lifetimeCounter = 0
-		s.isLate = false
-		s.Unlock()
-		return true
 	}
-	s.Unlock()
-	return false
+	return false, nil
 }
 
 func (s *Subscription) resendData() {
 	// log.Printf("resendData %d \n", s.id)
 	s.Lock()
+	defer s.Unlock()
 	s.resend = true
-	s.Unlock()
 }
