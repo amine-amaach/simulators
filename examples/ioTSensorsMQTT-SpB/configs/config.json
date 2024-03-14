@@ -1,6 +1,6 @@
 {
     "mqtt_config": {
-        "url": "tcp://mqtt:1883",
+        "url": "mqtt://mqtt:1883",
         "qos": 1,
         "client_id": "",
         "user": "",
