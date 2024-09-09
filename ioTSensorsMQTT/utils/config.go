@@ -16,6 +16,9 @@ type mqttBroker struct {
 	ServerURL            string `mapstructure:"SERVER_URL"`
 	User                 string `mapstructure:"SERVER_USER"`
 	Pwd                  string `mapstructure:"SERVER_PWD"`
+	TLSCAFile            string `mapstructure:"SERVER_TLS_CA_FILE"`
+	TLSCertFil           string `mapstructure:"SERVER_TLS_CERT_FILE"`
+	TLSKeyFile           string `mapstructure:"SERVER_TLS_KEY_FILE"`
 	Retain               bool   `mapstructure:"SERVER_RETAIN"`
 	Qos                  byte   `mapstructure:"SERVER_QOS"`
 	ClientID             string `mapstructure:"CLIENT_ID"`
@@ -70,6 +73,9 @@ func setDefault(v *viper.Viper) {
 	viper.SetDefault("SERVER_URL", "mqtt://broker.hivemq.com:1883")
 	viper.SetDefault("SERVER_USER", "")
 	viper.SetDefault("SERVER_PWD", "")
+	viper.SetDefault("SERVER_TLS_CA_FILE", "")
+	viper.SetDefault("SERVER_TLS_CERT_FILE", "")
+	viper.SetDefault("SERVER_TLS_KEY_FILE", "")
 	viper.SetDefault("SERVER_QOS", 2)
 	viper.SetDefault("SERVER_RETAIN", "true")
 	viper.SetDefault("CLIENT_ID", "IoTSensorsMQTT-Simulator")
